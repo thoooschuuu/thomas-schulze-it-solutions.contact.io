@@ -97,6 +97,14 @@
   --radius: 12px;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --transition: 0.3s ease;
+  /* Theme-sensitive surface colours (overridden in light mode) */
+  --navbar-bg: rgba(16, 14, 8, 0.92);
+  --dot-color: rgba(255, 255, 255, 0.04);
+  --surface-subtle: rgba(255, 255, 255, 0.06);
+  --surface-faint: rgba(255, 255, 255, 0.04);
+  --outline-border: rgba(255, 255, 255, 0.25);
+  --outline-border-hover: rgba(255, 255, 255, 0.5);
+  --outline-bg-hover: rgba(255, 255, 255, 0.08);
 }
 
 html {
@@ -137,7 +145,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(16, 14, 8, 0.92);
+  background: var(--navbar-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -234,7 +242,7 @@ img {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, var(--dot-color) 1px, transparent 0);
   background-size: 40px 40px;
 }
 
@@ -318,12 +326,12 @@ img {
 .btn-outline {
   background: transparent;
   color: var(--white);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border: 1.5px solid var(--outline-border);
 }
 
 .btn-outline:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: var(--outline-bg-hover);
+  border-color: var(--outline-border-hover);
   color: var(--white);
   transform: translateY(-2px);
 }
@@ -339,7 +347,7 @@ img {
 
 .chip {
   padding: 0.4rem 0.9rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-subtle);
   border: 1px solid var(--border);
   border-radius: 50px;
   font-size: 0.8rem;
@@ -444,7 +452,7 @@ img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-subtle);
   border: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 1rem;
@@ -483,7 +491,7 @@ img {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.85rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-faint);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.85rem;
@@ -678,7 +686,7 @@ img {
 
 .tag {
   padding: 0.25rem 0.65rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-subtle);
   border-radius: 50px;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -808,7 +816,7 @@ img {
 .form-group textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-faint);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--white);
@@ -904,6 +912,35 @@ img {
   background: rgba(255, 194, 80, 0.08);
 }
 
+/* ===== Theme Toggle ===== */
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.25rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.theme-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 194, 80, 0.08);
+}
+
+/* Sun shown in dark mode (click → go light); moon shown in light mode (click → go dark) */
+.theme-icon-sun { display: block; }
+.theme-icon-moon { display: none; }
+
+html[data-theme="light"] .theme-icon-sun { display: none; }
+html[data-theme="light"] .theme-icon-moon { display: block; }
+
 /* ===== Footer ===== */
 footer {
   text-align: center;
@@ -953,6 +990,31 @@ footer a:hover {
 
 .impressum-content a:hover {
   color: var(--primary);
+}
+
+/* ===== Light Mode ===== */
+html[data-theme="light"] {
+  --dark: #f5f3ee;
+  --darker: #eae6da;
+  --card-bg: #ffffff;
+  --white: #1e1b10;
+  --text: #3a3530;
+  --text-muted: #7a7060;
+  --border: rgba(180, 140, 50, 0.22);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  --navbar-bg: rgba(240, 236, 220, 0.95);
+  --dot-color: rgba(0, 0, 0, 0.06);
+  --surface-subtle: rgba(0, 0, 0, 0.05);
+  --surface-faint: rgba(0, 0, 0, 0.03);
+  --outline-border: rgba(30, 27, 16, 0.25);
+  --outline-border-hover: rgba(30, 27, 16, 0.45);
+  --outline-bg-hover: rgba(0, 0, 0, 0.05);
+}
+
+/* btn-primary needs explicit dark text in light mode (--darker becomes light cream) */
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .btn-primary:hover {
+  color: #1e1b10;
 }
 
 /* ===== Responsive ===== */

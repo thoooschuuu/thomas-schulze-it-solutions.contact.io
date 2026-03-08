@@ -1,3 +1,27 @@
+// Theme management: reads localStorage, falls back to system preference, defaults to dark.
+// NOTE: The same detection logic lives as a tiny inline <script> in every page's <head>
+// (before the stylesheet link) to set data-theme instantly and prevent a flash of the
+// wrong theme. That inline snippet must remain self-contained (it cannot load external JS).
+// Here we only wire the toggle button; we read the attribute already set by that snippet
+// rather than re-running the detection.
+(function () {
+  var THEME_KEY = 'ts_theme';
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+
+  var themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var next = current === 'light' ? 'dark' : 'light';
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    });
+  }
+})();
+
 // Highlight active nav link based on current page
 (function () {
   const path = window.location.pathname.split('/').pop() || 'index.html';

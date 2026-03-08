@@ -1,3 +1,76 @@
+/* ===== Arimo Font (locally hosted) ===== */
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-ext-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-ext-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-ext-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-ext-700-italic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Arimo';
+  src: url('../fonts/arimo-latin-700-italic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* ===== CSS Reset & Base ===== */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -6,22 +79,32 @@
 }
 
 :root {
-  --primary: #0d6efd;
-  --primary-dark: #0a58ca;
+  --primary: #ffc250;
+  --primary-dark: #e6a832;
+  --primary-darker: #c48a10;
   --secondary: #6c757d;
-  --dark: #1a1a2e;
-  --darker: #0f0f1a;
+  --dark: #1a1710;
+  --darker: #100e08;
   --light: #f8f9fa;
   --white: #ffffff;
-  --accent: #00d4ff;
+  --accent: #ffc250;
+  --accent-light: #ffd580;
   --text: #e0e0e0;
   --text-muted: #9e9e9e;
-  --card-bg: #16213e;
-  --border: rgba(255, 255, 255, 0.08);
-  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --card-bg: #1e1b10;
+  --border: rgba(255, 194, 80, 0.12);
+  --font: 'Arimo', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --radius: 12px;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   --transition: 0.3s ease;
+  /* Theme-sensitive surface colours (overridden in light mode) */
+  --navbar-bg: rgba(16, 14, 8, 0.92);
+  --dot-color: rgba(255, 255, 255, 0.04);
+  --surface-subtle: rgba(255, 255, 255, 0.06);
+  --surface-faint: rgba(255, 255, 255, 0.04);
+  --outline-border: rgba(255, 255, 255, 0.25);
+  --outline-border-hover: rgba(255, 255, 255, 0.5);
+  --outline-bg-hover: rgba(255, 255, 255, 0.08);
 }
 
 html {
@@ -62,20 +145,21 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(15, 15, 26, 0.9);
+  background: var(--navbar-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
 
 .navbar-brand {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--white);
-  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
-.navbar-brand span {
-  color: var(--accent);
+.navbar-brand img {
+  height: 40px;
+  width: auto;
+  display: block;
 }
 
 .nav-links {
@@ -146,8 +230,8 @@ img {
   justify-content: center;
   text-align: center;
   padding: 4rem 2rem;
-  background: radial-gradient(ellipse at 60% 40%, rgba(13, 110, 253, 0.15) 0%, transparent 60%),
-              radial-gradient(ellipse at 20% 80%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+  background: radial-gradient(ellipse at 60% 40%, rgba(255, 194, 80, 0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 80%, rgba(230, 168, 50, 0.07) 0%, transparent 50%),
               var(--darker);
   position: relative;
   overflow: hidden;
@@ -158,7 +242,7 @@ img {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, var(--dot-color) 1px, transparent 0);
   background-size: 40px 40px;
 }
 
@@ -171,8 +255,8 @@ img {
 .hero-badge {
   display: inline-block;
   padding: 0.35rem 1rem;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: rgba(255, 194, 80, 0.1);
+  border: 1px solid rgba(255, 194, 80, 0.3);
   border-radius: 50px;
   font-size: 0.85rem;
   color: var(--accent);
@@ -228,26 +312,26 @@ img {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: var(--white);
-  box-shadow: 0 4px 16px rgba(13, 110, 253, 0.3);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--darker);
+  box-shadow: 0 4px 16px rgba(255, 194, 80, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.4);
-  color: var(--white);
+  box-shadow: 0 8px 24px rgba(255, 194, 80, 0.4);
+  color: var(--darker);
 }
 
 .btn-outline {
   background: transparent;
   color: var(--white);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border: 1.5px solid var(--outline-border);
 }
 
 .btn-outline:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: var(--outline-bg-hover);
+  border-color: var(--outline-border-hover);
   color: var(--white);
   transform: translateY(-2px);
 }
@@ -263,7 +347,7 @@ img {
 
 .chip {
   padding: 0.4rem 0.9rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-subtle);
   border: 1px solid var(--border);
   border-radius: 50px;
   font-size: 0.8rem;
@@ -327,13 +411,13 @@ img {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 1.5rem;
   font-size: 4rem;
-  box-shadow: 0 0 40px rgba(13, 110, 253, 0.3);
+  box-shadow: 0 0 40px rgba(255, 194, 80, 0.25);
 }
 
 .about-name {
@@ -368,7 +452,7 @@ img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-subtle);
   border: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 1rem;
@@ -376,7 +460,7 @@ img {
 }
 
 .social-link:hover {
-  background: rgba(0, 212, 255, 0.15);
+  background: rgba(255, 194, 80, 0.15);
   border-color: var(--accent);
   color: var(--accent);
   transform: translateY(-2px);
@@ -407,7 +491,7 @@ img {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.85rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-faint);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.85rem;
@@ -416,8 +500,8 @@ img {
 }
 
 .skill-chip:hover {
-  background: rgba(0, 212, 255, 0.08);
-  border-color: rgba(0, 212, 255, 0.3);
+  background: rgba(255, 194, 80, 0.08);
+  border-color: rgba(255, 194, 80, 0.3);
   color: var(--white);
 }
 
@@ -493,7 +577,7 @@ img {
 
 .project-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(0, 212, 255, 0.25);
+  border-color: rgba(255, 194, 80, 0.25);
   box-shadow: var(--shadow);
 }
 
@@ -505,8 +589,8 @@ img {
   width: 48px;
   height: 48px;
   border-radius: 10px;
-  background: rgba(13, 110, 253, 0.15);
-  border: 1px solid rgba(13, 110, 253, 0.3);
+  background: rgba(255, 194, 80, 0.12);
+  border: 1px solid rgba(255, 194, 80, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -602,7 +686,7 @@ img {
 
 .tag {
   padding: 0.25rem 0.65rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-subtle);
   border-radius: 50px;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -668,14 +752,14 @@ img {
 }
 
 .contact-item:hover {
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(255, 194, 80, 0.3);
 }
 
 .contact-item-icon {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: rgba(0, 212, 255, 0.1);
+  background: rgba(255, 194, 80, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -732,7 +816,7 @@ img {
 .form-group textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-faint);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--white);
@@ -750,8 +834,8 @@ img {
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: rgba(0, 212, 255, 0.5);
-  background: rgba(0, 212, 255, 0.04);
+  border-color: rgba(255, 194, 80, 0.5);
+  background: rgba(255, 194, 80, 0.04);
 }
 
 .form-group select option {
@@ -796,8 +880,6 @@ img {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  margin-left: 1.25rem;
-  flex-shrink: 0;
 }
 
 .lang-toggle-sep {
@@ -825,16 +907,54 @@ img {
 .lang-btn.active {
   color: var(--accent);
   border-color: var(--accent);
-  background: rgba(0, 212, 255, 0.08);
+  background: rgba(255, 194, 80, 0.08);
 }
+
+/* ===== Theme Toggle ===== */
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.25rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.theme-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 194, 80, 0.08);
+}
+
+/* Sun shown in dark mode (click → go light); moon shown in light mode (click → go dark) */
+.theme-icon-sun { display: block; }
+.theme-icon-moon { display: none; }
+
+html[data-theme="light"] .theme-icon-sun { display: none; }
+html[data-theme="light"] .theme-icon-moon { display: block; }
 
 /* ===== Footer ===== */
 footer {
-  text-align: center;
-  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1.5rem 2rem;
   border-top: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.footer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 footer a {
@@ -877,6 +997,39 @@ footer a:hover {
 
 .impressum-content a:hover {
   color: var(--primary);
+}
+
+/* ===== Light Mode ===== */
+html[data-theme="light"] {
+  --dark: #f5f3ee;
+  --darker: #eae6da;
+  --card-bg: #ffffff;
+  --white: #1e1b10;
+  --text: #3a3530;
+  --text-muted: #7a7060;
+  --border: rgba(180, 140, 50, 0.22);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  --navbar-bg: rgba(240, 236, 220, 0.95);
+  --dot-color: rgba(0, 0, 0, 0.06);
+  --surface-subtle: rgba(0, 0, 0, 0.05);
+  --surface-faint: rgba(0, 0, 0, 0.03);
+  --outline-border: rgba(30, 27, 16, 0.25);
+  --outline-border-hover: rgba(30, 27, 16, 0.45);
+  --outline-bg-hover: rgba(0, 0, 0, 0.05);
+  /* Dark amber overrides – the bright golden (#ffc250) is unreadable on light
+     backgrounds (~1.5:1). These values achieve 5.2:1 on the page bg and
+     5.8:1 on card bg, meeting WCAG AA (≥ 4.5:1) for normal text. */
+  --accent: #8a5c00;
+  --accent-light: #a06a00;
+  --primary: #8a5c00;
+  --primary-dark: #6b4600;
+  --primary-darker: #503400;
+}
+
+/* btn-primary needs explicit dark text in light mode (--darker becomes light cream) */
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .btn-primary:hover {
+  color: #1e1b10;
 }
 
 /* ===== Responsive ===== */

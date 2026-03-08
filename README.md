@@ -150,7 +150,7 @@ Two scripts are loaded by every page (in order):
    - **Hamburger menu** – toggles `.open` on `.nav-links` and animates the three `<span>` bars into an ✕.
    - **Contact form** – intercepts `submit`, builds a pre-filled `mailto:` URL from the form fields, opens the system email client, and shows `#formSuccess`.
 
-Both files use ES6+ syntax (`const`, `fetch`, `FormData`) and target modern evergreen browsers.
+Both files use ES6+ syntax (for example, `const` and `FormData`) and target modern evergreen browsers.
 No transpiler or bundler is used – the scripts are loaded directly via `<script>` tags.
 
 ### Contact form

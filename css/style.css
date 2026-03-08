@@ -407,6 +407,24 @@ img {
   text-align: center;
 }
 
+.avatar-photo-wrapper {
+  position: relative;
+  margin: 0 auto 1.5rem;
+  width: 180px;
+  height: 180px;
+}
+
+.avatar-photo {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  box-shadow: 0 0 40px rgba(255, 194, 80, 0.25);
+  border: 3px solid var(--border);
+}
+
 .avatar-circle {
   width: 180px;
   height: 180px;
@@ -415,9 +433,11 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1.5rem;
-  font-size: 4rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--dark);
   box-shadow: 0 0 40px rgba(255, 194, 80, 0.25);
+  letter-spacing: 0.05em;
 }
 
 .about-name {

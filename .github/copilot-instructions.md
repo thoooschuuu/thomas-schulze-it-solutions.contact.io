@@ -35,9 +35,24 @@ thomas-schulze-it-solutions.contact.io/
 ├── js/
 │   ├── i18n.js       # DE/EN translations + project data rendering
 │   └── main.js       # Theme toggle, nav highlight, hamburger, contact form
+├── tests/
+│   ├── playwright.config.js   # Playwright config (webServer: python3 -m http.server)
+│   ├── package.json           # Playwright devDependency (tests only, not the site)
+│   ├── unit/
+│   │   ├── i18n.spec.js       # Unit-style tests for window.i18n API
+│   │   └── main.spec.js       # Unit-style tests for theme, nav, hamburger, form
+│   └── e2e/
+│       ├── navigation.spec.js # Page-load smoke tests + nav/footer links
+│       ├── theme.spec.js      # Theme toggle and persistence
+│       ├── language.spec.js   # DE/EN switcher and persistence
+│       ├── projects.spec.js   # Project card rendering and accordion
+│       ├── contact.spec.js    # Contact form fields and mailto handler
+│       └── datenschutz.spec.js# Privacy-policy compliance guardrails
 ├── .github/
-│   └── copilot-instructions.md  # ← you are here (agent guide)
-└── README.md         # Developer guide (local setup, deployment, design tokens)
+│   ├── copilot-instructions.md  # ← you are here (agent guide)
+│   └── workflows/
+│       └── tests.yml          # CI: runs Playwright on every PR to main
+└── README.md         # Developer guide (local setup, testing, deployment, design tokens)
 ```
 
 ---
@@ -145,6 +160,20 @@ Each decision below carries agent-actionable rules. Before making changes, ident
 - ✅ New icons should be inline `<svg>` using `stroke="currentColor"` or `fill="currentColor"`.
 - ✅ Add `aria-hidden="true"` to every purely decorative SVG.
 - ✅ Add a descriptive `title` attribute or `aria-label` to interactive SVG icons.
+
+### AD-11: Playwright regression test suite in `tests/`
+
+**Decision:** A Playwright test suite lives in `tests/`. It runs against a locally served copy of the static site (`python3 -m http.server`) and never touches the deployed GitHub Pages site. Tests are run on every pull request to `main` via `.github/workflows/tests.yml`.  
+**Rationale:** Provides a fast, automated regression check for both humans and coding agents. Compliance guardrails in `tests/e2e/datenschutz.spec.js` catch accidental introduction of cookies, external CDNs, or tracking scripts that would invalidate the privacy policy claims in `datenschutz.html`. Node.js and Playwright are confined to the `tests/` directory and are not loaded by the site.  
+**Agent rules:**
+- ✅ **Always add or update tests when making any change to the site.** See the mapping table in the [Testing](#testing) section below.
+- ✅ Run tests locally before opening a PR: `cd tests && npx playwright test`.
+- ✅ When adding a new JS behaviour (new event handler, new `window.i18n` API feature, new `localStorage` key), add a test to the relevant `tests/unit/` spec.
+- ✅ When adding a new page or UI component with interactive behaviour, add page-load coverage to `tests/e2e/navigation.spec.js` and a dedicated `tests/e2e/*.spec.js` for the interaction.
+- ✅ When adding a new `localStorage` key, add it to the `permitted` set in the datenschutz compliance test **and** update `datenschutz.html` to document the new key.
+- ✅ When adding any new third-party resource (font, script, CDN), update the compliance tests in `tests/e2e/datenschutz.spec.js` and update `datenschutz.html` to reflect the change before merging.
+- ❌ Never skip or delete a failing test to make a PR pass — fix the underlying issue instead.
+- ❌ Never add `node_modules/`, `playwright-report/`, or `test-results/` to version control (they are in `.gitignore`).
 
 ---
 
@@ -543,6 +572,62 @@ replace the `window.location.href = mailtoUrl` block with a `fetch()` call and r
 
 ---
 
+## Testing
+
+The Playwright suite in `tests/` is the project's regression safety net. Run it after every change.
+
+### How to run tests
+
+```bash
+# From the tests/ directory
+cd tests
+npm install                                    # first time only
+npx playwright install --with-deps chromium    # first time only
+
+npx playwright test                            # run all tests (headless)
+npx playwright test --headed                   # run with a visible browser
+npx playwright test e2e/projects.spec.js       # run a single spec
+```
+
+The web server (`python3 -m http.server 3000`) is started automatically by Playwright's `webServer` config and stopped when the test run ends. No manual startup is needed.
+
+### Test file reference
+
+| Spec file | What it covers |
+|-----------|----------------|
+| `unit/i18n.spec.js` | `window.i18n.t()`, `setLanguage()`, all `data-i18n*` attribute types, `localStorage` persistence and invalid-value fallback |
+| `unit/main.spec.js` | Theme toggle, `ts_theme` persistence, active nav link per page, hamburger menu open/close, contact form `e.preventDefault()` |
+| `e2e/navigation.spec.js` | All 6 pages load without JS errors; nav and footer links; every page has `<nav>`, `<main>`, `<footer>`, theme/lang buttons |
+| `e2e/theme.spec.js` | `data-theme` set before DOMContentLoaded; toggle flips theme; persists across navigation and reload |
+| `e2e/language.spec.js` | DE/EN buttons update text, `<html lang>`, `active` class; choice persists across navigation and reload |
+| `e2e/projects.spec.js` | Cards rendered from JS data; first card auto-opens; accordion click/keyboard; DE/EN labels |
+| `e2e/contact.spec.js` | All form fields present; form hides on submit (proves `e.preventDefault()` ran); no external POST |
+| `e2e/datenschutz.spec.js` | **Compliance guardrails:** no cookies, only `ts_theme`/`ts_lang` in localStorage, no Google Fonts CDN, no tracking scripts, no external POST on form submit |
+
+### When to add or update tests
+
+**Every code change to the site must be accompanied by a test update.** Use the table below to find the right spec:
+
+| Type of change | Test file(s) to update |
+|----------------|------------------------|
+| New JS behaviour in `main.js` (event handler, localStorage key, DOM interaction) | `tests/unit/main.spec.js` |
+| New or changed `window.i18n` feature | `tests/unit/i18n.spec.js` |
+| New page added | `tests/e2e/navigation.spec.js` (page load + structure) + dedicated `e2e/*.spec.js` for interactive behaviour |
+| New UI component with interaction | Dedicated `tests/e2e/*.spec.js` |
+| Contact form mechanism changed | `tests/e2e/contact.spec.js` |
+| New `localStorage` key added | `tests/unit/main.spec.js` or `tests/unit/i18n.spec.js` + `tests/e2e/datenschutz.spec.js` (add key to `permitted` set) + update `datenschutz.html` |
+| New third-party resource (font, CDN, script) | `tests/e2e/datenschutz.spec.js` (update compliance checks) + update `datenschutz.html` |
+| Project card rendering or accordion changed | `tests/e2e/projects.spec.js` |
+
+### Compliance guardrails
+
+`tests/e2e/datenschutz.spec.js` acts as a living test of the privacy policy. If any of its tests fail after your change, **do not skip the test** — either:
+
+1. Revert the change that broke the compliance promise, or
+2. Update `datenschutz.html` to honestly document the new behaviour, and update the test to reflect the new (accurate) policy.
+
+---
+
 ## Contact form details
 
 | Attribute | Value |
@@ -561,20 +646,22 @@ To change the delivery email: update the `mailto:` address in the `mailtoUrl` st
 | Goal | File(s) to edit |
 |------|----------------|
 | Update personal bio or stats | `about.html` |
-| Add / edit a project card | `js/i18n.js` (project data array) |
+| Add / edit a project card | `js/i18n.js` (project data array) + `tests/e2e/projects.spec.js` if rendering logic changes |
 | Update contact email / social links | `about.html`, `contact.html` |
 | Change colours or typography | `css/style.css` – `:root` tokens |
-| Add a new UI component | `css/style.css` (new labelled section), then use in the relevant HTML |
-| Change form behaviour | `js/main.js` – contact form handler |
-| Add a new page | New `.html` file + add nav link in all six existing HTML files + add translation keys in `js/i18n.js` |
+| Add a new UI component | `css/style.css` (new labelled section), then use in the relevant HTML + `tests/e2e/` |
+| Change form behaviour | `js/main.js` – contact form handler + `tests/e2e/contact.spec.js` |
+| Add a new page | New `.html` file + add nav link in all six existing HTML files + add translation keys in `js/i18n.js` + `tests/e2e/navigation.spec.js` |
 | Change the contact delivery email | `js/main.js` – update the `mailto:` address in `mailtoUrl` |
-| Switch to a backend form service | Update `js/main.js` (replace mailto block with `fetch()`) and `action` on `<form>` in `contact.html` |
+| Switch to a backend form service | Update `js/main.js` (replace mailto block with `fetch()`) and `action` on `<form>` in `contact.html` + `tests/e2e/contact.spec.js` + `datenschutz.html` |
 | Update hero headline or chips | `index.html` + translation keys in `js/i18n.js` |
 | Add or update a translation string | `js/i18n.js` – both `en` and `de` objects |
 | Change the theme colour palette | `css/style.css` – `:root` tokens and `html[data-theme="light"]` overrides |
 | Replace or update the logo | `img/logo.svg` and/or `img/logo-icon.svg` |
 | Update the Impressum | `impressum.html` |
 | Update the Privacy Policy | `datenschutz.html` |
+| Add a new `localStorage` key | The JS file that sets the key + `tests/unit/` spec + `tests/e2e/datenschutz.spec.js` (`permitted` set) + `datenschutz.html` |
+| Add any third-party resource | The HTML/CSS/JS file + `tests/e2e/datenschutz.spec.js` (compliance checks) + `datenschutz.html` |
 
 ---
 
@@ -595,6 +682,8 @@ To change the delivery email: update the `mailto:` address in the `mailtoUrl` st
 - Give every new project entry identical `id` values in both `projectsData.en` and `projectsData.de`.
 - Document significant architectural changes in this file (`.github/copilot-instructions.md`).
 - **After every code change, check whether `.github/copilot-instructions.md` and `README.md` need to be updated** to reflect the change. If either file contains information that is now out of date, update it in the same commit.
+- **Add or update tests for every change to the site** – see the [Testing](#testing) section and the "What to change and where" table for which spec files to update.
+- Run `cd tests && npx playwright test` locally before opening a PR.
 
 ### ❌ Don't
 
@@ -608,6 +697,8 @@ To change the delivery email: update the `mailto:` address in the `mailtoUrl` st
 - **Don't add project cards directly to `projects.html`** – all cards are rendered from `projectsData` in `js/i18n.js`.
 - **Don't move or modify the inline theme-detection `<script>` in `<head>`** – it must run synchronously before the stylesheet.
 - **Don't change accent/primary colour tokens** without verifying WCAG AA contrast in light mode.
+- **Don't skip or delete a failing test to make a PR pass** – fix the underlying issue. If a compliance test fails, either revert the change or update `datenschutz.html` and the test to reflect the new (accurate) policy.
+- **Don't merge a PR without running the Playwright test suite** – CI runs tests automatically, but run them locally first to catch issues early.
 
 ---
 
@@ -618,4 +709,13 @@ python3 -m http.server 3000
 # then open http://localhost:3000
 ```
 
-No build step, no install step needed. See `README.md` for Node.js and VS Code alternatives.
+No build step, no install step needed for the site itself. See `README.md` for Node.js and VS Code alternatives.
+
+To run the test suite locally:
+
+```bash
+cd tests
+npm install                                   # first time only
+npx playwright install --with-deps chromium   # first time only
+npx playwright test
+```

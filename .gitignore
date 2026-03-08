@@ -1,0 +1,4 @@
+# Test tooling – not part of the deployed static site
+tests/node_modules/
+tests/playwright-report/
+tests/test-results/

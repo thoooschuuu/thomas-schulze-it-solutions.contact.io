@@ -16,6 +16,7 @@ Personal portfolio and contact site for **Thomas Schulze – IT Solutions**, pub
   - [Styles](#styles)
   - [JavaScript](#javascript)
   - [Contact form](#contact-form)
+- [Testing](#testing)
 - [Deployment](#deployment)
 - [Design tokens reference](#design-tokens-reference)
 
@@ -59,8 +60,23 @@ thomas-schulze-it-solutions.contact.io/
 ├── js/
 │   ├── i18n.js       # Translations (DE/EN) + project data rendering
 │   └── main.js       # Vanilla JS: theme toggle, nav highlight, hamburger, contact form
+├── tests/
+│   ├── playwright.config.js   # Playwright configuration (serves site via python3 -m http.server)
+│   ├── package.json           # Playwright devDependency (tests only, not the site)
+│   ├── unit/
+│   │   ├── i18n.spec.js       # Unit-style tests for window.i18n API and translations
+│   │   └── main.spec.js       # Unit-style tests for theme toggle, nav, hamburger, form
+│   └── e2e/
+│       ├── navigation.spec.js # All pages load; nav/footer links work
+│       ├── theme.spec.js      # Theme toggle and persistence
+│       ├── language.spec.js   # DE/EN switcher and persistence
+│       ├── projects.spec.js   # Project card rendering and accordion interaction
+│       ├── contact.spec.js    # Contact form fields and mailto handler
+│       └── datenschutz.spec.js# Privacy-policy compliance guardrails
 ├── .github/
-│   └── copilot-instructions.md  # Agent guide (architecture decisions, conventions, rules)
+│   ├── copilot-instructions.md  # Agent guide (architecture decisions, conventions, rules)
+│   └── workflows/
+│       └── tests.yml          # CI: runs Playwright tests on every PR to main
 └── README.md         # This file
 ```
 
@@ -165,6 +181,60 @@ The form in `contact.html` uses a **client-side mailto: approach** — no backen
 
 ---
 
+## Testing
+
+The site has a **Playwright** test suite in the `tests/` directory. Tests run against a locally served copy of the site (`python3 -m http.server`) and **never** touch the deployed GitHub Pages site.
+
+### Prerequisites
+
+Node.js ≥ 18 is required to install and run Playwright.
+
+### Install and run
+
+```bash
+# From the tests/ directory
+cd tests
+npm install                              # install Playwright (first time only)
+npx playwright install --with-deps chromium  # download Chromium (first time only)
+
+# Run all tests
+npx playwright test
+
+# Run with a visible browser window
+npx playwright test --headed
+
+# Run a single spec file
+npx playwright test e2e/projects.spec.js
+```
+
+### Test structure
+
+| File | What it covers |
+|------|----------------|
+| `unit/i18n.spec.js` | `window.i18n` API: `t()`, `setLanguage()`, all three `data-i18n*` attributes, `localStorage` persistence |
+| `unit/main.spec.js` | Theme toggle, active nav link per page, hamburger menu, contact form `e.preventDefault()` |
+| `e2e/navigation.spec.js` | All 6 pages load without JS errors; nav and footer links; required structural elements |
+| `e2e/theme.spec.js` | Theme toggle flips `data-theme`, persists across navigation and reload |
+| `e2e/language.spec.js` | DE/EN switcher updates text, `<html lang>`, `active` class, `localStorage` |
+| `e2e/projects.spec.js` | Project cards render from JS data; accordion expand/collapse (click + keyboard); DE/EN labels |
+| `e2e/contact.spec.js` | Form fields present; mailto handler (form hides on submit, no external POST) |
+| `e2e/datenschutz.spec.js` | **Compliance guardrails** – fail if privacy promises are broken: no cookies, only `ts_theme`/`ts_lang` in `localStorage`, no Google Fonts CDN, no tracking scripts |
+
+### CI
+
+The workflow `.github/workflows/tests.yml` runs all tests automatically on every pull request targeting `main`. A Playwright HTML report is uploaded as a GitHub Actions artifact (14-day retention) and can be downloaded from the Actions tab if a run fails.
+
+### When to add or update tests
+
+**Always** add or update tests when you make a change to the site:
+
+- **New JS behaviour** (new event handler, new `window.i18n` feature, new `localStorage` key) → add a case to the relevant `tests/unit/` spec.
+- **New page or new UI component** → add a test to `tests/e2e/navigation.spec.js` and a dedicated `e2e/*.spec.js` if the component has interactive behaviour.
+- **Change to the contact form mechanism** (e.g. switching from mailto: to a backend) → update `tests/e2e/contact.spec.js`.
+- **Any change that affects the claims in `datenschutz.html`** (e.g. adding a new `localStorage` key, loading a third-party font, integrating analytics) → update `tests/e2e/datenschutz.spec.js` first, confirm the test fails with your intended change, then update the privacy policy text and make the test pass again.
+
+---
+
 ## Deployment
 
 Deployment is fully automatic via **GitHub Pages**:
@@ -173,7 +243,7 @@ Deployment is fully automatic via **GitHub Pages**:
 2. GitHub Pages rebuilds and publishes the site within ~1 minute.
 3. The live URL is `https://thoooschuuu.github.io/thomas-schulze-it-solutions.contact.io/`.
 
-There is no build step, no CI pipeline, and no compilation required.
+> **Note:** The `tests.yml` CI workflow runs the Playwright test suite on pull requests but is separate from the GitHub Pages deployment. Deploying the site does not trigger tests, and test failures do not block deployment — tests are a PR-gate only.
 
 ---
 

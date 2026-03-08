@@ -57,7 +57,8 @@ thomas-schulze-it-solutions.contact.io/
 ├── js/
 │   ├── i18n.js       # Translations (DE/EN) + project data rendering
 │   └── main.js       # Vanilla JS: theme toggle, nav highlight, hamburger, contact form
-├── AGENTS.md         # Documentation for AI coding agents
+├── .github/
+│   └── copilot-instructions.md  # Agent guide (architecture decisions, conventions, rules)
 └── README.md         # This file
 ```
 

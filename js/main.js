@@ -66,31 +66,39 @@ if (hamburger && navLinks) {
   });
 }
 
-// Contact form submission handler (uses Formspree AJAX endpoint)
+// Contact form submission handler
+// Collects form values and opens the system email client with a pre-filled message.
+// To switch to a backend endpoint (Azure Logic App, AWS API Gateway + SES, or a
+// Strato PHP script), replace the mailto: block below with a fetch() call to that
+// endpoint and restore the formSuccess / error handling accordingly.
 const contactForm = document.getElementById('contactForm');
 const formSuccess = document.getElementById('formSuccess');
 
 if (contactForm) {
   contactForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    const data = new FormData(contactForm);
-    fetch(contactForm.action, {
-      method: 'POST',
-      body: data,
-      headers: { Accept: 'application/json' }
-    }).then(function (response) {
-      if (response.ok) {
-        contactForm.style.display = 'none';
-        if (formSuccess) {
-          formSuccess.style.display = 'block';
-        }
-      } else {
-        contactForm.querySelector('[type="submit"]').textContent =
-          (window.i18n && window.i18n.t('contact.form.error')) || 'Failed – please try again';
-      }
-    }).catch(function () {
-      contactForm.querySelector('[type="submit"]').textContent =
-        (window.i18n && window.i18n.t('contact.form.error')) || 'Failed – please try again';
-    });
+    var nameEl    = contactForm.querySelector('[name="name"]');
+    var emailEl   = contactForm.querySelector('[name="_replyto"]');
+    var subjectEl = contactForm.querySelector('[name="subject"]');
+    var messageEl = contactForm.querySelector('[name="message"]');
+
+    var name    = nameEl    ? nameEl.value.trim()    : '';
+    var email   = emailEl   ? emailEl.value.trim()   : '';
+    var subject = subjectEl ? subjectEl.value.trim() : '';
+    var message = messageEl ? messageEl.value.trim() : '';
+
+    var body = ((window.i18n && window.i18n.t('contact.form.name.label')) || 'Name') + ': ' + name
+             + '\n' + ((window.i18n && window.i18n.t('contact.form.email.label')) || 'E-Mail') + ': ' + email
+             + '\n\n' + message;
+    var mailtoUrl = 'mailto:info@thomas-schulze-it-solutions.de'
+      + '?subject=' + encodeURIComponent(subject || (window.i18n && window.i18n.t('contact.form.subject.default')) || 'Kontaktanfrage')
+      + '&body='    + encodeURIComponent(body);
+
+    window.location.href = mailtoUrl;
+
+    contactForm.style.display = 'none';
+    if (formSuccess) {
+      formSuccess.style.display = 'block';
+    }
   });
 }

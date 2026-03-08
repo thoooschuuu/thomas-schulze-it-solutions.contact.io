@@ -15,7 +15,7 @@ Personal portfolio and contact site for **Thomas Schulze – IT Solutions**, pub
   - [Page content](#page-content)
   - [Styles](#styles)
   - [JavaScript](#javascript)
-  - [Contact form (Formspree)](#contact-form-formspree)
+  - [Contact form](#contact-form)
 - [Deployment](#deployment)
 - [Design tokens reference](#design-tokens-reference)
 
@@ -30,7 +30,7 @@ A zero-dependency, framework-free static website consisting of five pages:
 | Landing | `index.html` | Hero section, value-proposition cards, tech-stack chips |
 | About | `about.html` | Bio, skills grid, experience stats, service list |
 | Projects | `projects.html` | Project cards with tags and GitHub links |
-| Contact | `contact.html` | Contact info + Formspree-backed contact form |
+| Contact | `contact.html` | Contact info + mailto: contact form |
 | Impressum | `impressum.html` | Legal notice (required by German law) |
 
 All pages share a single stylesheet (`css/style.css`) and two scripts (`js/i18n.js` and `js/main.js`).  
@@ -57,7 +57,8 @@ thomas-schulze-it-solutions.contact.io/
 ├── js/
 │   ├── i18n.js       # Translations (DE/EN) + project data rendering
 │   └── main.js       # Vanilla JS: theme toggle, nav highlight, hamburger, contact form
-├── AGENTS.md         # Documentation for AI coding agents
+├── .github/
+│   └── copilot-instructions.md  # Agent guide (architecture decisions, conventions, rules)
 └── README.md         # This file
 ```
 
@@ -97,7 +98,7 @@ Open the URL shown in the terminal (usually <http://localhost:3000>).
 3. The browser opens and automatically reloads on every save.
 
 > **Why not just open the HTML file directly?**
-> Opening `file://` URLs in a browser works for basic inspection, but the Formspree AJAX call on the contact page and some browsers' security policies work better behind a proper HTTP server.
+> Opening `file://` URLs in a browser works for basic inspection, but some browsers' security policies may restrict `mailto:` links and `localStorage` access behind a proper HTTP server.
 
 ---
 
@@ -148,24 +149,17 @@ Two scripts are loaded by every page (in order):
    - **Theme toggle** – reads/writes `data-theme` on `<html>` and persists the choice to `localStorage` (`ts_theme`).
    - **Active nav link** – marks the `<a>` matching the current filename with the class `active`.
    - **Hamburger menu** – toggles `.open` on `.nav-links` and animates the three `<span>` bars into an ✕.
-   - **Contact form** – intercepts `submit`, POSTs to Formspree via `fetch()`, and shows either `#formSuccess` or an error on the submit button.
+   - **Contact form** – intercepts `submit`, builds a pre-filled `mailto:` URL from the form fields, opens the system email client, and shows `#formSuccess`.
 
-Both files use ES6+ syntax (`const`, `fetch`, `FormData`) and target modern evergreen browsers.
+Both files use ES6+ syntax (for example, `const` and `FormData`) and target modern evergreen browsers.
 No transpiler or bundler is used – the scripts are loaded directly via `<script>` tags.
 
-### Contact form (Formspree)
+### Contact form
 
-The form in `contact.html` posts to the Formspree endpoint:
+The form in `contact.html` uses a **client-side mailto: approach** — no backend or external service required. When the user submits the form, `js/main.js` collects the field values, builds a pre-filled `mailto:` URL, and navigates to it so the system email client opens with the message ready to send.
 
-```
-https://formspree.io/f/xpwzqgpn
-```
-
-- Submissions are delivered to the email address configured in the Formspree dashboard.
-- The `_replyto` field maps to the sender's email so replies work from your inbox.
-- The hidden `_gotcha` field is a honeypot to discard bot submissions automatically.
-- To change the delivery address: log in at [formspree.io](https://formspree.io), navigate to the form, and update the email there. **No code change is needed.**
-- To replace Formspree with a different service, update the `action` attribute on the `<form>` element and adjust the `fetch()` call in `js/main.js` accordingly.
+- To change the delivery email address: update the `mailto:` address in all of the following places so they stay in sync: the `mailtoUrl` string inside the submit handler in `js/main.js`, the `action="mailto:..."` attribute on the `<form>` in `contact.html` (for the non-JS fallback), and the visible contact email link in `contact.html`.
+- To switch to a backend service (Azure Logic App, AWS API Gateway + SES, a PHP endpoint, etc.), replace the `window.location.href = mailtoUrl` block in `js/main.js` with a `fetch()` call to that endpoint, update the `action` attribute on `<form>` in `contact.html`, and restore the `formSuccess` / error-button pattern.
 
 ---
 

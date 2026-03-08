@@ -1,4 +1,4 @@
-# AI Agent Guide – thomas-schulze-it-solutions.contact.io
+# Copilot Instructions – thomas-schulze-it-solutions.contact.io
 
 This file is the authoritative reference for any AI coding agent working on this repository.
 Read it fully before making any changes.
@@ -22,7 +22,7 @@ thomas-schulze-it-solutions.contact.io/
 ├── index.html        # Landing / hero page
 ├── about.html        # About me (bio, skills, stats, services)
 ├── projects.html     # Project portfolio cards
-├── contact.html      # Contact details + Formspree form
+├── contact.html      # Contact details + mailto: form
 ├── impressum.html    # Legal notice (Impressum)
 ├── css/
 │   └── style.css     # One shared stylesheet – dark/light theme, CSS variables, responsive
@@ -34,7 +34,8 @@ thomas-schulze-it-solutions.contact.io/
 ├── js/
 │   ├── i18n.js       # DE/EN translations + project data rendering
 │   └── main.js       # Theme toggle, nav highlight, hamburger, contact form
-├── AGENTS.md         # ← you are here
+├── .github/
+│   └── copilot-instructions.md  # ← you are here (agent guide)
 └── README.md         # Developer guide (local setup, deployment, design tokens)
 ```
 
@@ -115,14 +116,14 @@ Each decision below carries agent-actionable rules. Before making changes, ident
 - ✅ Projects are automatically sorted by `startDate` descending (most recent first). Do not manually order the arrays.
 - ✅ See the **Project data schema** subsection in the JavaScript conventions section below for the full field reference.
 
-### AD-8: Formspree AJAX for email delivery
+### AD-8: mailto: contact form (no backend)
 
-**Decision:** The contact form POSTs to a Formspree endpoint via `fetch()`. `e.preventDefault()` intercepts the native form submission.  
-**Rationale:** Real email delivery without any backend server, environment secrets in the repo, or DevOps pipeline.  
+**Decision:** The contact form collects fields and builds a `mailto:` URL that opens the user's system email client with a pre-filled message. There is no server-side component and no third-party form service.  
+**Rationale:** Zero dependencies, no API keys, no monthly cost, GDPR-friendly — the message goes directly from the user's own email client to the inbox.  
 **Agent rules:**
-- ❌ Never remove `e.preventDefault()` from the form submit handler in `main.js`.
-- ✅ To change the delivery email address, use the Formspree dashboard — no code change needed.
-- ✅ To replace Formspree, update `action` on `<form>` in `contact.html` and the `fetch()` call in `js/main.js`.
+- ❌ Never remove `e.preventDefault()` from the form submit handler in `main.js` — it is still required to prevent the browser's native form navigation before the mailto URL is built.
+- ✅ To change the delivery email address, update the `mailto:` address in the `mailtoUrl` string inside the submit handler in `js/main.js`, and update the matching `mailto:` addresses in `contact.html` (the form `action="mailto:…"` and the contact mail link) so the fallback path stays consistent.
+- ✅ To replace the mailto: approach with a backend endpoint (e.g. Azure Logic App, AWS API Gateway + SES, or a PHP script), replace the `window.location.href = mailtoUrl` block with a `fetch()` call and restore `formSuccess` / error handling accordingly. Update the `action` attribute on `<form>` in `contact.html` as well.
 
 ### AD-9: WCAG AA colour contrast enforced in light mode
 
@@ -354,7 +355,7 @@ The actual rendered card HTML structure (useful when writing CSS for `.project-c
 
 ## JavaScript conventions
 
-Two scripts are loaded by every page – `js/i18n.js` first, then `js/main.js`. Both are plain vanilla JavaScript targeting **modern evergreen browsers** (ES6+). They use `const`, `fetch`, `FormData`, and function expressions. No transpiler, no bundler, and no module system.
+Two scripts are loaded by every page – `js/i18n.js` first, then `js/main.js`. Both are plain vanilla JavaScript targeting **modern evergreen browsers** (ES6+). They use `const`, `FormData`, and function expressions. No transpiler, no bundler, and no module system.
 
 ### IIFE pattern for scope isolation
 
@@ -433,7 +434,7 @@ When adding user-visible text, choose the correct attribute type and add the key
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `t` | `t(key: string): string` | Returns the translation for `key` in the current language, or `key` itself if not found. Used by `main.js` for the form error message. |
+| `t` | `t(key: string): string` | Returns the translation for `key` in the current language, or `key` itself if not found. Used by `main.js` to localise email body labels in the contact form mailto handler. |
 | `setLanguage` | `setLanguage(lang: 'en' \| 'de'): void` | Switches language, persists to `localStorage`, and re-applies all translations. |
 
 ### Project data schema and workflow
@@ -489,21 +490,27 @@ var domainIcons = {
 
 ### Contact form submission
 
-The form uses the **Formspree AJAX** pattern:
+The form uses the **mailto: client-side** pattern — no backend required:
 
 ```js
-fetch(contactForm.action, {            // action = https://formspree.io/f/xpwzqgpn
-  method: 'POST',
-  body: new FormData(contactForm),
-  headers: { Accept: 'application/json' }
-}).then(function (response) {
-  if (response.ok) { /* show #formSuccess */ }
-  else             { /* update submit button text */ }
+contactForm.addEventListener('submit', function (e) {
+  e.preventDefault();               // prevent native form navigation
+  // … collect field values …
+  var mailtoUrl = 'mailto:info@thomas-schulze-it-solutions.de'
+    + '?subject=' + encodeURIComponent(subject)
+    + '&body='    + encodeURIComponent(body);
+  window.location.href = mailtoUrl; // open system email client
+  contactForm.style.display = 'none';
+  if (formSuccess) { formSuccess.style.display = 'block'; }
 });
 ```
 
-Do **not** remove `e.preventDefault()` – it prevents the default browser form navigation
-so the AJAX handler can show inline feedback.
+Do **not** remove `e.preventDefault()` – it prevents the browser's native form submission
+so the mailto URL can be built and the success panel can be shown.
+
+To switch to a backend endpoint (Azure Logic App, AWS API Gateway + SES, Strato PHP, etc.)
+replace the `window.location.href = mailtoUrl` block with a `fetch()` call and restore the
+`formSuccess` / error-button pattern. See the comment in `js/main.js` for guidance.
 
 ---
 
@@ -511,13 +518,12 @@ so the AJAX handler can show inline feedback.
 
 | Attribute | Value |
 |-----------|-------|
-| Endpoint | `https://formspree.io/f/xpwzqgpn` |
-| Method | `POST` (AJAX via `fetch()`) |
-| Email field name | `_replyto` (maps to reply-to header) |
-| Spam trap | hidden `_gotcha` input (honeypot) |
-| Success element | `#formSuccess` (hidden `<div>`, shown on `response.ok`) |
+| Mechanism | `mailto:` URL built client-side; opens the system email client |
+| Delivery address | `info@thomas-schulze-it-solutions.de` (hardcoded in `js/main.js`) |
+| Email field name | `_replyto` (value is included in the mailto body) |
+| Success element | `#formSuccess` (hidden `<div>`, shown after `window.location.href` is set) |
 
-To change the delivery email: update it in the **Formspree dashboard** – no code change needed.
+To change the delivery email: update the `mailto:` address in the `mailtoUrl` string in `js/main.js`, and keep `contact.html` in sync (form `action="mailto:…"` and the visible contact mail link).
 
 ---
 
@@ -532,8 +538,8 @@ To change the delivery email: update it in the **Formspree dashboard** – no co
 | Add a new UI component | `css/style.css` (new labelled section), then use in the relevant HTML |
 | Change form behaviour | `js/main.js` – contact form handler |
 | Add a new page | New `.html` file + add nav link in all five existing HTML files + add translation keys in `js/i18n.js` |
-| Change Formspree delivery email | Formspree dashboard (no code change) |
-| Replace Formspree | Update `action` on `<form>` and `fetch()` in `js/main.js` |
+| Change the contact delivery email | `js/main.js` – update the `mailto:` address in `mailtoUrl` |
+| Switch to a backend form service | Update `js/main.js` (replace mailto block with `fetch()`) and `action` on `<form>` in `contact.html` |
 | Update hero headline or chips | `index.html` + translation keys in `js/i18n.js` |
 | Add or update a translation string | `js/i18n.js` – both `en` and `de` objects |
 | Change the theme colour palette | `css/style.css` – `:root` tokens and `html[data-theme="light"]` overrides |
@@ -551,13 +557,14 @@ To change the delivery email: update it in the **Formspree dashboard** – no co
 - Keep the `<nav>`, `<footer>`, and `<script>` tags identical across all HTML files.
 - Validate HTML after edits: `python3 -c "from html.parser import HTMLParser; …"` or any online validator.
 - Add `rel="noopener"` to every `target="_blank"` link (security best practice).
-- Keep `js/main.js` and `js/i18n.js` ES6+ (modern browsers). Use `const`/`let`, `fetch`, and `FormData` freely. Do **not** add a transpiler or bundler.
+- Keep `js/main.js` and `js/i18n.js` ES6+ (modern browsers). Use `const`/`let` and `FormData` freely. Do **not** add a transpiler or bundler.
 - Add `data-i18n` / `data-i18n-html` / `data-i18n-placeholder` attributes to every user-visible string and provide both `en` and `de` translations in `js/i18n.js`.
 - Wrap new self-contained JS blocks in IIFEs `(function () { ... })()` to avoid global scope pollution.
 - Use the `ts_` prefix for any new `localStorage` key.
 - Verify WCAG AA contrast ratios when changing any colour token (≥4.5:1 for text, ≥3:1 for UI).
 - Give every new project entry identical `id` values in both `projectsData.en` and `projectsData.de`.
-- Document significant architectural changes in this file (`AGENTS.md`).
+- Document significant architectural changes in this file (`.github/copilot-instructions.md`).
+- **After every code change, check whether `.github/copilot-instructions.md` and `README.md` need to be updated** to reflect the change. If either file contains information that is now out of date, update it in the same commit.
 
 ### ❌ Don't
 
@@ -566,7 +573,7 @@ To change the delivery email: update it in the **Formspree dashboard** – no co
 - **Don't hard-code colour hex values in HTML or CSS** – use the custom properties.
 - **Don't use `document.write()`** or other intrusive DOM patterns.
 - **Don't commit `node_modules/`, `.DS_Store`, or editor config files** (add them to `.gitignore` if needed).
-- **Don't break the Formspree AJAX pattern** by removing `e.preventDefault()` from the form handler.
+- **Don't remove `e.preventDefault()` from the contact form handler** — it is required to prevent native form submission before the mailto URL is built and the success panel is shown.
 - **Don't add user-visible text without a translation key** in both `en` and `de` in `js/i18n.js`.
 - **Don't add project cards directly to `projects.html`** – all cards are rendered from `projectsData` in `js/i18n.js`.
 - **Don't move or modify the inline theme-detection `<script>` in `<head>`** – it must run synchronously before the stylesheet.
@@ -574,27 +581,11 @@ To change the delivery email: update it in the **Formspree dashboard** – no co
 
 ---
 
-## Local development quick-start
+## Local development
 
 ```bash
-# Clone the repository
-git clone https://github.com/thoooschuuu/thomas-schulze-it-solutions.contact.io.git
-cd thomas-schulze-it-solutions.contact.io
-
-# Serve locally (Python – no install needed)
 python3 -m http.server 3000
-
-# Open in browser
-open http://localhost:3000        # macOS
-xdg-open http://localhost:3000    # Linux
-start http://localhost:3000       # Windows
+# then open http://localhost:3000
 ```
 
-See `README.md` for full local development instructions including Node.js and VS Code alternatives.
-
----
-
-## Deployment
-
-Push to the GitHub Pages source branch (default: `main`). GitHub builds and publishes
-automatically within ~1 minute. No CI pipeline, no build step, no configuration needed.
+No build step, no install step needed. See `README.md` for Node.js and VS Code alternatives.

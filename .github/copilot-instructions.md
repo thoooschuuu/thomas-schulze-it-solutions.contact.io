@@ -45,7 +45,7 @@ Every file is served directly by GitHub Pages.
 - Swap the `<script>` load order or add `defer`/`async` to `js/i18n.js` or `js/main.js`.
 - Add a third JS file — extend the existing two files instead.
 - Add `<article class="project-card">` directly in `projects.html`.
-- Hard-code English-only text in HTML — every visible string needs `data-i18n` and translations in both `en` and `de`.
+- Hard-code English-only text in translatable UI HTML — for navigation, footer, shared UI components, and the main content pages (`index.html`, `about.html`, `projects.html`, `contact.html`), every user-visible string must have `data-i18n` and translations in both `en` and `de`. Legal/long-form static content like `impressum.html` is exempt.
 - Introduce an icon font (Font Awesome, Material Icons, etc.).
 - Remove `e.preventDefault()` from the contact form submit handler in `main.js` — it is still required to prevent native form submission before the mailto URL is built.
 - Change `--accent`/`--primary` colour tokens without verifying WCAG AA contrast (≥4.5:1 for text).

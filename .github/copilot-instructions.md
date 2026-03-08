@@ -332,26 +332,53 @@ Content sections use this consistent structure:
 The actual rendered card HTML structure (useful when writing CSS for `.project-card`) is:
 
 ```html
-<article class="project-card">
-  <div class="project-meta">
-    <div class="project-domain-row">
-      <span class="project-icon-sm" aria-hidden="true">📻</span>
-      <span class="project-domain-label">Broadcasting (Radio)</span>
+<article class="project-card is-open" id="pc-{uuid}">
+
+  <!-- Always-visible header — acts as the accordion toggle -->
+  <div class="project-card-header"
+       id="ph-{uuid}"
+       role="button"
+       tabindex="0"
+       aria-expanded="true"
+       aria-controls="pb-{uuid}">
+    <div class="project-card-header-info">
+      <div class="project-meta">
+        <div class="project-domain-row">
+          <span class="project-icon-sm" aria-hidden="true">📻</span>
+          <span class="project-domain-label">Broadcasting (Radio)</span>
+        </div>
+        <span class="project-period">Nov 2010 – Jan 2013</span>
+      </div>
+      <h2 class="project-title">Job Title</h2>
     </div>
-    <span class="project-period">Nov 2010 – Jan 2013</span>
+    <!-- Chevron SVG: rotates 180° and turns amber when card has .is-open -->
+    <svg class="project-toggle-icon" …></svg>
   </div>
-  <h2 class="project-title">Job Title</h2>
-  <p class="project-section-label">Project Description</p>
-  <div class="project-desc"><!-- trusted HTML from description field --></div>
-  <p class="project-section-label">My Role</p>
-  <div class="project-role"><!-- trusted HTML from role field --></div>
-  <p class="project-section-label">Technologies</p>
-  <div class="project-tags">
-    <span class="tag">C#</span>
-    <span class="tag">.NET</span>
+
+  <!-- Collapsible body — animated via max-height transition -->
+  <div class="project-card-body"
+       id="pb-{uuid}"
+       role="region"
+       aria-labelledby="ph-{uuid}">
+    <p class="project-section-label">Project Description</p>
+    <div class="project-desc"><!-- trusted HTML from description field --></div>
+    <p class="project-section-label">My Role</p>
+    <div class="project-role"><!-- trusted HTML from role field --></div>
+    <p class="project-section-label">Technologies</p>
+    <div class="project-tags">
+      <span class="tag">C#</span>
+      <span class="tag">.NET</span>
+    </div>
   </div>
+
 </article>
 ```
+
+**Accordion behaviour (implemented in `renderProjects()`):**
+- `.project-card-body` starts with `max-height: 0; overflow: hidden` in CSS; JS sets an explicit `max-height` in pixels during the open/close transition.
+- Once a card finishes opening (`transitionend`), the inline `max-height` is cleared so the body reflows naturally on viewport resize. A CSS rule (`.project-card.is-open .project-card-body { max-height: none }`) prevents re-collapse.
+- The close path re-pins the current height inline, forces a synchronous reflow, then sets `max-height: 0` to trigger the collapse animation.
+- The most-recent card (`is-open` + `aria-expanded="true"`) is auto-opened on every render (including language switch).
 
 ---
 

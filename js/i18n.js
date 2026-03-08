@@ -481,32 +481,105 @@
       return new Date(b.startDate) - new Date(a.startDate);
     });
 
-    grid.innerHTML = sorted.map(function (p) {
-      var start = formatDate(p.startDate, lang);
-      var end   = formatDate(p.endDate, lang);
-      var icon  = getIcon(p.customerDomain);
+    var chevronSvg = '<svg class="project-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
 
-      return '<article class="project-card">' +
-        '<div class="project-meta">' +
-          '<div class="project-domain-row">' +
-            '<span class="project-icon-sm" aria-hidden="true">' + icon + '</span>' +
-            '<span class="project-domain-label">' + escapeHtml(p.customerDomain) + '</span>' +
+    grid.innerHTML = sorted.map(function (p) {
+      var start    = formatDate(p.startDate, lang);
+      var end      = formatDate(p.endDate, lang);
+      var icon     = getIcon(p.customerDomain);
+      var safeId   = escapeHtml(p.id);
+      var headerId = 'ph-' + safeId;
+      var bodyId   = 'pb-' + safeId;
+
+      return '<article class="project-card" id="pc-' + safeId + '">' +
+        '<div class="project-card-header" id="' + headerId + '" role="button" tabindex="0" aria-expanded="false" aria-controls="' + bodyId + '">' +
+          '<div class="project-card-header-info">' +
+            '<div class="project-meta">' +
+              '<div class="project-domain-row">' +
+                '<span class="project-icon-sm" aria-hidden="true">' + icon + '</span>' +
+                '<span class="project-domain-label">' + escapeHtml(p.customerDomain) + '</span>' +
+              '</div>' +
+              '<span class="project-period">' + escapeHtml(start) + ' \u2013 ' + escapeHtml(end) + '</span>' +
+            '</div>' +
+            '<h2 class="project-title">' + escapeHtml(p.title) + '</h2>' +
           '</div>' +
-          '<span class="project-period">' + escapeHtml(start) + ' – ' + escapeHtml(end) + '</span>' +
+          chevronSvg +
         '</div>' +
-        '<h2 class="project-title">' + escapeHtml(p.title) + '</h2>' +
-        '<p class="project-section-label">' + escapeHtml(t['projects.desc.label']) + '</p>' +
-        '<div class="project-desc">' + p.description + '</div>' +
-        '<p class="project-section-label">' + escapeHtml(t['projects.role.label']) + '</p>' +
-        '<div class="project-role">' + p.role + '</div>' +
-        '<p class="project-section-label">' + escapeHtml(t['projects.tech.label']) + '</p>' +
-        '<div class="project-tags">' +
-          p.technologies.map(function (tech) {
-            return '<span class="tag">' + escapeHtml(tech) + '</span>';
-          }).join('') +
+        '<div class="project-card-body" id="' + bodyId + '" role="region" aria-labelledby="' + headerId + '">' +
+          '<p class="project-section-label">' + escapeHtml(t['projects.desc.label']) + '</p>' +
+          '<div class="project-desc">' + p.description + '</div>' +
+          '<p class="project-section-label">' + escapeHtml(t['projects.role.label']) + '</p>' +
+          '<div class="project-role">' + p.role + '</div>' +
+          '<p class="project-section-label">' + escapeHtml(t['projects.tech.label']) + '</p>' +
+          '<div class="project-tags">' +
+            p.technologies.map(function (tech) {
+              return '<span class="tag">' + escapeHtml(tech) + '</span>';
+            }).join('') +
+          '</div>' +
         '</div>' +
       '</article>';
     }).join('');
+
+    // Set up accordion event delegation once (survives language switches via innerHTML reset)
+    if (!grid.dataset.accordionReady) {
+      grid.dataset.accordionReady = '1';
+
+      function toggleCard(header) {
+        var card = header.closest('.project-card');
+        if (!card) return;
+        var body = card.querySelector('.project-card-body');
+        if (!body) return;
+        var open = card.classList.toggle('is-open');
+        header.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+          body.style.maxHeight = body.scrollHeight + 'px';
+        } else {
+          // Re-pin current height before collapsing; the inline style may have been
+          // cleared by transitionend, leaving body unrestricted (max-height: none from CSS).
+          body.style.maxHeight = body.scrollHeight + 'px';
+          // Force a synchronous reflow so the browser sees the start value for the transition.
+          // eslint-disable-next-line no-unused-expressions
+          body.offsetHeight;
+          body.style.maxHeight = '0';
+        }
+      }
+
+      // Remove the inline max-height constraint once fully open so the body reflows
+      // naturally on viewport resize (text reflow won't cause content clipping).
+      grid.addEventListener('transitionend', function (e) {
+        if (e.propertyName !== 'max-height') return;
+        var body = e.target;
+        if (!body.classList.contains('project-card-body')) return;
+        var card = body.closest('.project-card');
+        if (card && card.classList.contains('is-open')) {
+          body.style.maxHeight = ''; // CSS .is-open rule (max-height: none) takes over
+        }
+      });
+
+      grid.addEventListener('click', function (e) {
+        var header = e.target.closest('.project-card-header');
+        if (header) toggleCard(header);
+      });
+
+      grid.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          var header = e.target.closest('.project-card-header');
+          if (header) { e.preventDefault(); toggleCard(header); }
+        }
+      });
+    }
+
+    // Open the first (most recent) card by default
+    var firstHeader = grid.querySelector('.project-card-header');
+    if (firstHeader) {
+      var firstCard = firstHeader.closest('.project-card');
+      var firstBody = firstCard && firstCard.querySelector('.project-card-body');
+      if (firstCard && firstBody) {
+        firstCard.classList.add('is-open');
+        firstHeader.setAttribute('aria-expanded', 'true');
+        firstBody.style.maxHeight = firstBody.scrollHeight + 'px';
+      }
+    }
   }
 
   /* ====================================================

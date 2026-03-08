@@ -42,17 +42,106 @@ thomas-schulze-it-solutions.contact.io/
 
 ## Architecture decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| No framework or build tool | GitHub Pages serves only static files; zero configuration deployment |
-| Single CSS file | All pages share one theme; CSS custom properties avoid duplication |
-| Two JS files (`i18n.js` + `main.js`) | `i18n.js` loads first and exposes `window.i18n`; `main.js` relies on it. Guards with `if (element)` checks make them safe on any page |
-| Self-hosted Arimo font (`fonts/`) | Avoids a third-party network request; font files committed to the repo |
-| Dark / light theme toggle | Stored in `localStorage` (`ts_theme`); detected by an inline `<script>` in each `<head>` before the stylesheet loads, preventing a flash of wrong theme |
-| DE / EN language toggle | Handled entirely by `js/i18n.js`; language choice stored in `localStorage` (`ts_lang`) |
-| Formspree for the contact form | Provides a real email backend without a server; free tier is sufficient |
-| Inline SVG icons | No icon font dependency; icons stay crisp at any resolution |
-| SVG logo in `img/` | Scalable logo used in navbar and as favicon |
+Each decision below carries agent-actionable rules. Before making changes, identify which decisions apply and follow their rules.
+
+### AD-1: Zero-dependency static site
+
+**Decision:** No framework, build tool, npm packages, or bundler of any kind.  
+**Rationale:** GitHub Pages serves static files directly; zero configuration deployment; no maintenance burden from dependencies.  
+**Agent rules:**
+- ❌ Never run `npm init`, `npm install`, or introduce a package manager.
+- ❌ Never add a frontend framework (React, Vue, Next.js, etc.) to this site.
+- ❌ Never add a build step, Webpack/Vite/esbuild config, or similar tool.
+- ✅ Use native browser APIs only: ES2015+ (`const`/`let`, arrow functions, `fetch`, `FormData`, template literals, destructuring). All modern evergreen browsers (Chrome, Firefox, Edge, Safari) are supported targets.
+
+### AD-2: Single shared stylesheet
+
+**Decision:** One `css/style.css` shared by all pages; no page-specific stylesheets.  
+**Rationale:** All pages share one theme; CSS custom properties avoid duplication; single cache entry for all pages.  
+**Agent rules:**
+- ❌ Never create a separate stylesheet for a single page.
+- ✅ Add new component styles in a new labelled section inside `css/style.css` **before** the `/* ===== Responsive ===== */` section.
+- ✅ Always use CSS custom property tokens from `:root`; never hard-code colour hex values in HTML or CSS.
+
+### AD-3: Two JS files with strict load order
+
+**Decision:** `js/i18n.js` loads first (exposes `window.i18n`), then `js/main.js` (consumes it). Both files are loaded as plain `<script>` tags at the end of `<body>`.  
+**Rationale:** i18n must initialise before interactive scripts so translations are applied before the page is interactive; `main.js` uses `window.i18n.t()` for the form error message.  
+**Agent rules:**
+- ❌ Never swap the script order or add `defer`/`async` to either `<script>` tag.
+- ❌ Never add a third JS file — extend the existing files instead.
+- ✅ Both scripts wrap standalone, self-contained blocks in IIFEs `(function () { ... })()` to keep their internals out of the global scope. New self-contained features should use an IIFE. Simple one-off variable declarations that are referenced throughout the file (like `hamburger`, `navLinks`, `contactForm` in `main.js`) may remain at the top level as `const`.
+- ✅ Guard every DOM query with `if (element)` — both scripts run on every page, most elements only exist on one page.
+- ✅ When `main.js` needs a translated string, use `(window.i18n && window.i18n.t('key')) || 'fallback'`.
+- ✅ All app-specific `localStorage` keys use the `ts_` prefix: `ts_theme`, `ts_lang`. Any new persisted value must follow this convention.
+
+### AD-4: Self-hosted Arimo font
+
+**Decision:** The Arimo typeface is served from `fonts/*.woff2`; no Google Fonts or CDN reference.  
+**Rationale:** Eliminates a third-party network request; GDPR-friendly (no data sent to Google); fonts are always available even offline.  
+**Agent rules:**
+- ❌ Never add a `<link>` to Google Fonts or any external font CDN.
+- ✅ The `--font` token provides a graceful fallback stack: `'Arimo', 'Segoe UI', system-ui, -apple-system, sans-serif`.
+- ✅ If new font weights or styles are needed, add the `.woff2` file to `fonts/` and a matching `@font-face` block at the top of `css/style.css` in the `/* ===== Arimo Font ===== */` section.
+
+### AD-5: Flash-free theme detection via inline `<head>` script
+
+**Decision:** Each page's `<head>` contains a tiny synchronous inline `<script>` that reads `localStorage` and sets `data-theme` on `<html>` *before* the stylesheet loads. `js/main.js` only wires the click handler.  
+**Rationale:** A stylesheet cannot read `localStorage`. Moving detection to an external script would require `defer`/`async`, which lets the stylesheet render first with the wrong theme and then flash to the correct one.  
+**Agent rules:**
+- ❌ Never move the inline snippet to an external file or add `defer`/`async` to it.
+- ❌ Never remove or duplicate the inline snippet — one per page, identical across all five pages.
+- ✅ Valid `data-theme` values are exactly `"dark"` (default) and `"light"`. No other values are valid.
+- ✅ The `localStorage` key is `ts_theme`. Do not rename it.
+
+### AD-6: i18n in JS; German is the default language; `<html lang>` is dynamic
+
+**Decision:** All translations live in a JS object inside `i18n.js`. The default language is `de`. When the language changes, `i18n.js` also updates `document.documentElement.setAttribute('lang', lang)` at runtime.  
+**Rationale:** No server-side rendering available; translations embedded in JS avoid a network request; the `lang` attribute must stay in sync with the active language for accessibility tools.  
+**Agent rules:**
+- ✅ Every user-visible string must have a `data-i18n`, `data-i18n-html`, or `data-i18n-placeholder` attribute and a matching key in **both** `en` and `de` translation objects in `i18n.js`.
+- ❌ Never hard-code English-only text in HTML markup.
+- ❌ Never set `<html lang="">` to a fixed value other than `de` in a new page — i18n.js overwrites it at runtime based on the user's preference.
+- ✅ The `localStorage` key is `ts_lang`. Valid values are `"de"` and `"en"` only; anything else is normalised to `"de"`.
+
+### AD-7: Projects rendered dynamically from JS data objects (not HTML)
+
+**Decision:** Project data is stored as JS objects (`projectsData.en` / `projectsData.de`) inside `i18n.js`. `projects.html` contains only an empty `<div id="projectsGrid">` container. The renderer builds the card HTML at runtime.  
+**Rationale:** Projects need translated content; storing data in JS avoids duplicating the card HTML structure for each language; sorting by date is trivial in JS.  
+**Agent rules:**
+- ❌ Never add a `<article class="project-card">` directly to `projects.html`.
+- ✅ To add or edit a project, edit **both** `projectsData.en` and `projectsData.de` arrays in `js/i18n.js`.
+- ✅ Each project must have the same `id` (a UUID v4) in both language arrays so they can be correlated.
+- ✅ Projects are automatically sorted by `startDate` descending (most recent first). Do not manually order the arrays.
+- ✅ See the **Project data schema** subsection in the JavaScript conventions section below for the full field reference.
+
+### AD-8: Formspree AJAX for email delivery
+
+**Decision:** The contact form POSTs to a Formspree endpoint via `fetch()`. `e.preventDefault()` intercepts the native form submission.  
+**Rationale:** Real email delivery without any backend server, environment secrets in the repo, or DevOps pipeline.  
+**Agent rules:**
+- ❌ Never remove `e.preventDefault()` from the form submit handler in `main.js`.
+- ✅ To change the delivery email address, use the Formspree dashboard — no code change needed.
+- ✅ To replace Formspree, update `action` on `<form>` in `contact.html` and the `fetch()` call in `js/main.js`.
+
+### AD-9: WCAG AA colour contrast enforced in light mode
+
+**Decision:** The amber accent `#ffc250` has only ~1.5:1 contrast on light backgrounds — inaccessible. Light mode overrides `--accent`, `--primary`, and their variants to a darker amber (`#8a5c00`) that achieves ≥5.2:1 on the page background and ≥5.8:1 on card backgrounds (WCAG AA requires ≥4.5:1 for normal text).  
+**Rationale:** Accessibility is non-negotiable. The colour palette must be readable in both themes.  
+**Agent rules:**
+- ❌ Never change `--accent`, `--primary`, or their `-dark`/`-darker` variants in `:root` without also verifying the corresponding overrides in `html[data-theme="light"]` meet WCAG AA (≥4.5:1 for text, ≥3:1 for UI components).
+- ✅ Use a contrast checker (e.g., [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)) before committing new colour values.
+- ✅ Update the WCAG comment in `css/style.css` near the light-mode overrides if you change the values.
+
+### AD-10: Inline SVG icons; external SVG logo
+
+**Decision:** All UI icons are inline `<svg>` elements using `currentColor`. The logo (`img/logo-icon.svg`, `img/logo.svg`) is an external SVG referenced via `<img>` and `<link rel="icon">`.  
+**Rationale:** Inline SVGs eliminate an icon-font request, stay crisp at any resolution, and inherit theme colours automatically. The logo is external so the browser can cache it and reference it as a favicon.  
+**Agent rules:**
+- ❌ Never introduce an icon font (Font Awesome, Material Icons, Bootstrap Icons, etc.).
+- ✅ New icons should be inline `<svg>` using `stroke="currentColor"` or `fill="currentColor"`.
+- ✅ Add `aria-hidden="true"` to every purely decorative SVG.
+- ✅ Add a descriptive `title` attribute or `aria-label` to interactive SVG icons.
 
 ---
 
@@ -235,18 +324,28 @@ Content sections use this consistent structure:
 
 ### Card pattern (projects page)
 
+> ⚠️ **Do not hand-author project cards in `projects.html`.** All cards are generated at runtime by `renderProjects()` in `js/i18n.js`. To add or edit a project, see the **Project data schema and workflow** section below.
+
+The actual rendered card HTML structure (useful when writing CSS for `.project-card`) is:
+
 ```html
 <article class="project-card">
-  <div class="project-icon"><!-- emoji or SVG --></div>
-  <h2 class="project-title">Title</h2>
-  <p class="project-desc">Description.</p>
-  <div class="project-tags">
-    <span class="tag">Tag</span>
+  <div class="project-meta">
+    <div class="project-domain-row">
+      <span class="project-icon-sm" aria-hidden="true">📻</span>
+      <span class="project-domain-label">Broadcasting (Radio)</span>
+    </div>
+    <span class="project-period">Nov 2010 – Jan 2013</span>
   </div>
-  <div class="project-links">
-    <a href="…" class="project-link" target="_blank" rel="noopener">
-      <!-- inline SVG icon --> Link text
-    </a>
+  <h2 class="project-title">Job Title</h2>
+  <p class="project-section-label">Project Description</p>
+  <div class="project-desc"><!-- trusted HTML from description field --></div>
+  <p class="project-section-label">My Role</p>
+  <div class="project-role"><!-- trusted HTML from role field --></div>
+  <p class="project-section-label">Technologies</p>
+  <div class="project-tags">
+    <span class="tag">C#</span>
+    <span class="tag">.NET</span>
   </div>
 </article>
 ```
@@ -256,6 +355,34 @@ Content sections use this consistent structure:
 ## JavaScript conventions
 
 Two scripts are loaded by every page – `js/i18n.js` first, then `js/main.js`. Both are plain vanilla JavaScript targeting **modern evergreen browsers** (ES6+). They use `const`, `fetch`, `FormData`, and function expressions. No transpiler, no bundler, and no module system.
+
+### IIFE pattern for scope isolation
+
+Both files wrap standalone code blocks in immediately-invoked function expressions (IIFEs) to keep their internals out of the global scope:
+
+```js
+// ✅ correct – internals are isolated
+(function () {
+  var privateVar = 'only visible inside this IIFE';
+  // ...
+})();
+
+// ❌ wrong – pollutes window.*
+var privateVar = 'now a global';
+```
+
+`main.js` also uses plain `const` at the top level for a few variables (e.g., `hamburger`, `navLinks`, `contactForm`) that are referenced across multiple event listeners in the file. This is acceptable for file-scoped variables. New **self-contained** features (a complete logical block with its own variables) should use an IIFE.
+
+### localStorage key prefix
+
+All app-specific `localStorage` keys use the **`ts_`** prefix to avoid collisions:
+
+| Key | Set by | Values |
+|-----|--------|--------|
+| `ts_theme` | inline head script + `main.js` | `"dark"` (default) \| `"light"` |
+| `ts_lang` | `i18n.js` | `"de"` (default) \| `"en"` |
+
+Any new feature that persists state must use a `ts_` prefixed key.
 
 ### Guard every DOM query
 
@@ -287,11 +414,78 @@ document.documentElement.setAttribute('data-theme', t);
 
 `js/i18n.js` exposes `window.i18n`. It:
 - Reads the preferred language from `localStorage` (key `ts_lang`), defaulting to `'de'`.
-- Applies translations by reading `data-i18n` (text) and `data-i18n-html` (innerHTML) attributes.
+- Applies translations by scanning the DOM for three attribute types (see table below).
 - Dynamically renders the projects grid on `projects.html` from embedded project data.
 - Wires the `.lang-btn` buttons in the footer.
+- Updates `document.documentElement.setAttribute('lang', lang)` on every language switch.
 
-When adding user-visible text, always add a `data-i18n="key"` attribute on the element and add the corresponding entry to **both** `en` and `de` in `js/i18n.js`.
+**Translation attributes:**
+
+| Attribute | Sets | Use for |
+|-----------|------|---------|
+| `data-i18n="key"` | `element.textContent` | Plain text content (safe default) |
+| `data-i18n-html="key"` | `element.innerHTML` | Rich HTML content (lists, inline tags) |
+| `data-i18n-placeholder="key"` | `element.placeholder` | `<input>` and `<textarea>` placeholder text |
+
+When adding user-visible text, choose the correct attribute type and add the key to **both** `en` and `de` in `js/i18n.js`.
+
+**`window.i18n` public API:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `t` | `t(key: string): string` | Returns the translation for `key` in the current language, or `key` itself if not found. Used by `main.js` for the form error message. |
+| `setLanguage` | `setLanguage(lang: 'en' \| 'de'): void` | Switches language, persists to `localStorage`, and re-applies all translations. |
+
+### Project data schema and workflow
+
+Projects are stored as JS objects inside `js/i18n.js` — not as HTML in `projects.html`. The renderer sorts them by `startDate` descending.
+
+**Project object schema:**
+
+```js
+{
+  id:             'uuid-v4-string',   // Stable ID – must match across en and de arrays
+  title:          'string',           // Job title / project title (text-only, HTML-escaped)
+  description:    '<p>HTML…</p>',     // Project description (trusted HTML: <p>, <ul>, <li>, <br>)
+  role:           '<ul>…</ul>',       // Agent's role (trusted HTML: <ul>, <li>, <p>)
+  customerDomain: 'string',           // Industry/domain label (text-only, HTML-escaped; drives icon)
+  startDate:      'YYYY-MM-DD',       // ISO 8601 date string (UTC); must be a complete date
+  endDate:        'YYYY-MM-DD',       // ISO 8601 date string (UTC); must be a complete date
+  technologies:   ['string', …]       // Array of technology names (text-only, HTML-escaped)
+}
+```
+
+> **Ongoing projects:** There is no `null`/`undefined` support for `endDate` — the date formatter requires a complete `YYYY-MM-DD` string. For an ongoing engagement, use the last day of the current month as a placeholder (e.g., `"2025-12-31"`). Update `endDate` when the project concludes.
+
+**HTML trust model – important for security:**
+
+| Field | Insertion method | Agent rule |
+|-------|-----------------|------------|
+| `description` | `innerHTML` (trusted) | May contain `<p>`, `<ul>`, `<li>`, `<br>` — no user-supplied content, no `<script>` |
+| `role` | `innerHTML` (trusted) | Same as `description` |
+| `title` | `escapeHtml()` → text | Plain text only — no HTML tags |
+| `customerDomain` | `escapeHtml()` → text | Plain text only |
+| `technologies[]` | `escapeHtml()` → text | Plain text only — each entry is one technology name |
+
+**`domainIcons` mapping:**
+
+The `getIcon(domain)` function maps `customerDomain` strings to emoji icons. If the domain string is not in the map, the fallback icon `💼` is used. When adding a project with a new customer domain, add an entry to the `domainIcons` object in `js/i18n.js`:
+
+```js
+var domainIcons = {
+  'Broadcasting (Radio)': '📻',
+  'Broadcasting':         '📺',
+  // … add new entries here (both EN and DE domain strings if they differ)
+};
+```
+
+**How to add a new project (step by step):**
+
+1. Generate a UUID v4 for the `id`. Options: `crypto.randomUUID()` in a modern browser console, or an online generator such as [uuidgenerator.net](https://www.uuidgenerator.net/).
+2. Add the project object to `projectsData.en` in `js/i18n.js`.
+3. Add the **same project** (translated) to `projectsData.de` with the **identical `id`**.
+4. If `customerDomain` is new, add it to `domainIcons` in both EN and DE variants if the label differs.
+5. Verify locally with `python3 -m http.server 3000` that the card renders correctly in both languages and both themes.
 
 ### Contact form submission
 
@@ -358,7 +552,11 @@ To change the delivery email: update it in the **Formspree dashboard** – no co
 - Validate HTML after edits: `python3 -c "from html.parser import HTMLParser; …"` or any online validator.
 - Add `rel="noopener"` to every `target="_blank"` link (security best practice).
 - Keep `js/main.js` and `js/i18n.js` ES6+ (modern browsers). Use `const`/`let`, `fetch`, and `FormData` freely. Do **not** add a transpiler or bundler.
-- Add `data-i18n` / `data-i18n-html` attributes to every user-visible string and provide both `en` and `de` translations in `js/i18n.js`.
+- Add `data-i18n` / `data-i18n-html` / `data-i18n-placeholder` attributes to every user-visible string and provide both `en` and `de` translations in `js/i18n.js`.
+- Wrap new self-contained JS blocks in IIFEs `(function () { ... })()` to avoid global scope pollution.
+- Use the `ts_` prefix for any new `localStorage` key.
+- Verify WCAG AA contrast ratios when changing any colour token (≥4.5:1 for text, ≥3:1 for UI).
+- Give every new project entry identical `id` values in both `projectsData.en` and `projectsData.de`.
 - Document significant architectural changes in this file (`AGENTS.md`).
 
 ### ❌ Don't
@@ -370,6 +568,9 @@ To change the delivery email: update it in the **Formspree dashboard** – no co
 - **Don't commit `node_modules/`, `.DS_Store`, or editor config files** (add them to `.gitignore` if needed).
 - **Don't break the Formspree AJAX pattern** by removing `e.preventDefault()` from the form handler.
 - **Don't add user-visible text without a translation key** in both `en` and `de` in `js/i18n.js`.
+- **Don't add project cards directly to `projects.html`** – all cards are rendered from `projectsData` in `js/i18n.js`.
+- **Don't move or modify the inline theme-detection `<script>` in `<head>`** – it must run synchronously before the stylesheet.
+- **Don't change accent/primary colour tokens** without verifying WCAG AA contrast in light mode.
 
 ---
 

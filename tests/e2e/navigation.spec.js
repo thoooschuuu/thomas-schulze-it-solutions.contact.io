@@ -8,12 +8,12 @@
 const { test, expect } = require('@playwright/test');
 
 const pages = [
-  { path: '/index.html',       title: /Thomas Schulze/ },
-  { path: '/about.html',       title: /Thomas Schulze/ },
-  { path: '/projects.html',    title: /Thomas Schulze/ },
-  { path: '/contact.html',     title: /Thomas Schulze/ },
-  { path: '/impressum.html',   title: /Thomas Schulze/ },
-  { path: '/datenschutz.html', title: /Thomas Schulze/ },
+  { path: '/index.html',       title: /Thomas Schulze/, canonical: 'https://thomas-schulze-it-solutions.de/' },
+  { path: '/about.html',       title: /Thomas Schulze/, canonical: 'https://thomas-schulze-it-solutions.de/about.html' },
+  { path: '/projects.html',    title: /Thomas Schulze/, canonical: 'https://thomas-schulze-it-solutions.de/projects.html' },
+  { path: '/contact.html',     title: /Thomas Schulze/, canonical: 'https://thomas-schulze-it-solutions.de/contact.html' },
+  { path: '/impressum.html',   title: /Thomas Schulze/, canonical: 'https://thomas-schulze-it-solutions.de/impressum.html' },
+  { path: '/datenschutz.html', title: /Thomas Schulze/, canonical: 'https://thomas-schulze-it-solutions.de/datenschutz.html' },
 ];
 
 test.describe('All pages load without errors', () => {
@@ -115,5 +115,41 @@ test.describe('Page structure', () => {
       img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0
     );
     await expect(isLoaded).toBeTruthy();
+  });
+});
+
+test.describe('SEO meta tags', () => {
+  for (const { path, canonical } of pages) {
+    test(`${path} has a canonical link tag`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const href = await page.locator('link[rel="canonical"]').getAttribute('href');
+      expect(href).toBe(canonical);
+    });
+
+    test(`${path} has og:url meta tag`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[property="og:url"]').getAttribute('content');
+      expect(content).toBe(canonical);
+    });
+
+    test(`${path} has og:site_name meta tag`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[property="og:site_name"]').getAttribute('content');
+      expect(content).toBe('Thomas Schulze IT Solutions');
+    });
+  }
+
+  test('index.html has updated title for SEO', async ({ page }) => {
+    await page.goto('/index.html');
+    await expect(page).toHaveTitle(/Software Architect.*\.NET Freelancer/);
+  });
+
+  test('index.html has og:type=website', async ({ page }) => {
+    await page.goto('/index.html');
+    const content = await page.locator('meta[property="og:type"]').getAttribute('content');
+    expect(content).toBe('website');
   });
 });

@@ -1122,6 +1122,21 @@ html[data-theme="light"] .btn-primary:hover {
   color: #1e1b10;
 }
 
+/* Hero logo: logo.svg uses hardcoded near-white (#e0e0e0) and bright amber (#ffc250)
+   fills that are illegible on the light beige background. Place the logo on a dark
+   tile so it renders on the surface it was designed for. */
+html[data-theme="light"] .hero-logo {
+  background: rgba(26, 23, 16, 0.92);
+  border-radius: var(--radius);
+  padding: 1rem 2rem;
+}
+
+/* Navbar icon: amber gradient end (#ffc250) has ~1.4:1 contrast on the light navbar.
+   Darken via filter so the icon meets WCAG non-text contrast (≥ 3:1). */
+html[data-theme="light"] .navbar-brand img {
+  filter: brightness(0.65);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .hamburger {

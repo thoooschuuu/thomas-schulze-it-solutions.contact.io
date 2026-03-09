@@ -43,7 +43,7 @@ The site supports **German and English** (language switcher in the footer) and a
 ## Repository structure
 
 ```
-thomas-schulze-it-solutions.contact.io/
+thoooschuuu.github.io/
 ├── index.html        # Landing / hero page
 ├── about.html        # About me page
 ├── projects.html     # Projects / portfolio page

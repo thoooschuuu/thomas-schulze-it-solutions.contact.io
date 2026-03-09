@@ -162,6 +162,15 @@ test.describe('SEO meta tags', () => {
     });
   }
 
+  for (const { path } of pages) {
+    test(`${path} has og:locale set to de_DE`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[property="og:locale"]').getAttribute('content');
+      expect(content).toBe('de_DE');
+    });
+  }
+
   test('index.html has JSON-LD Person structured data', async ({ page }) => {
     await page.goto('/index.html');
     await page.waitForLoadState('domcontentloaded');

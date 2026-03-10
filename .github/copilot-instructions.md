@@ -25,6 +25,7 @@ thomas-schulze-it-solutions.contact.io/
 ├── contact.html      # Contact details + mailto: form
 ├── impressum.html    # Legal notice (Impressum) – German-only (legal requirement)
 ├── datenschutz.html  # Privacy policy (Datenschutzerklärung) – German-only (legal document)
+├── 404.html          # Custom GitHub Pages 404 error page (noindex; links back to home)
 ├── robots.txt        # Crawl directives; allows all except /tests/; references sitemap
 ├── sitemap.xml       # XML sitemap listing all 6 pages with priorities and change frequencies
 ├── css/

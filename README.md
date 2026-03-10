@@ -50,6 +50,7 @@ thoooschuuu.github.io/
 ├── contact.html      # Contact info + form
 ├── impressum.html    # Legal notice (Impressum)
 ├── datenschutz.html  # Privacy policy (Datenschutzerklärung)
+├── 404.html          # Custom GitHub Pages 404 error page (noindex; links back to home)
 ├── robots.txt        # Crawl directives (allows all except /tests/; references sitemap)
 ├── sitemap.xml       # XML sitemap listing all 6 pages
 ├── css/

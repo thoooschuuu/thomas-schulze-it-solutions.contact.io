@@ -230,6 +230,13 @@ test.describe('Custom 404 page', () => {
     await expect(page.locator('.lang-btn[data-lang="de"]')).toBeAttached();
     await expect(page.locator('.lang-btn[data-lang="en"]')).toBeAttached();
   });
+
+  test('404.html has noindex, nofollow robots directive', async ({ page }) => {
+    await page.goto('/404.html');
+    await page.waitForLoadState('domcontentloaded');
+    const content = await page.locator('meta[name="robots"]').getAttribute('content');
+    expect(content).toBe('noindex, nofollow');
+  });
 });
 
 test.describe('SEO crawl files', () => {

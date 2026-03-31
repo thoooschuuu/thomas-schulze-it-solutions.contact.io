@@ -4,20 +4,18 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PAGES=(index.html about.html projects.html contact.html impressum.html datenschutz.html)
+PAGES=(index.html about.html projects.html contact.html impressum.html datenschutz.html 404.html)
 
-# Extract sorted href values from the nav-links block
+# Extract href values from the nav-links block (preserve order)
 extract_nav_hrefs() {
   sed -n '/<ul class="nav-links">/,/<\/ul>/p' "$1" \
-    | grep -oE 'href="[^"]*"' \
-    | sort
+    | grep -oE 'href="[^"]*"'
 }
 
-# Extract sorted href values from footer links
+# Extract href values from footer links (preserve order)
 extract_footer_hrefs() {
   sed -n '/<footer/,/<\/footer>/p' "$1" \
-    | grep -oE 'href="[^"]*"' \
-    | sort
+    | grep -oE 'href="[^"]*"'
 }
 
 ref_nav=""
@@ -28,7 +26,8 @@ errors=0
 for page in "${PAGES[@]}"; do
   file="$ROOT/$page"
   if [ ! -f "$file" ]; then
-    echo "WARN: $page not found, skipping"
+    echo "FAIL: Expected page $page not found"
+    errors=$((errors + 1))
     continue
   fi
 

@@ -240,11 +240,13 @@ test.describe('Custom 404 page', () => {
 });
 
 test.describe('SEO crawl files', () => {
-  test('robots.txt is served and contains Disallow: /tests/', async ({ request }) => {
+  test('robots.txt is served and disallows dev/tooling paths', async ({ request }) => {
     const response = await request.get('/robots.txt');
     expect(response.status()).toBe(200);
     const body = await response.text();
     expect(body).toContain('Disallow: /tests/');
+    expect(body).toContain('Disallow: /scripts/');
+    expect(body).toContain('Disallow: /CLAUDE.md');
   });
 
   test('robots.txt references the sitemap URL', async ({ request }) => {

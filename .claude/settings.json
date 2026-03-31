@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/check-html-sync.sh",
+            "timeout": 15,
+            "statusMessage": "Checking HTML nav/footer sync..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd tests && npx playwright test",
+            "timeout": 120,
+            "statusMessage": "Running Playwright tests..."
+          }
+        ]
+      }
+    ]
+  }
+}

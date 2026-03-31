@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /tests/
+Disallow: /scripts/
+Disallow: /CLAUDE.md
 
 Sitemap: https://thomas-schulze-it-solutions.de/sitemap.xml

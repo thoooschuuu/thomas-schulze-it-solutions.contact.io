@@ -2,3 +2,6 @@
 tests/node_modules/
 tests/playwright-report/
 tests/test-results/
+
+# Claude Code local memory (machine-specific paths)
+.claude/projects/

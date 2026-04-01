@@ -240,7 +240,7 @@ test.describe('Custom 404 page', () => {
   test('404.html navbar brand navigates to index.html', async ({ page }) => {
     await page.goto('/404.html');
     await page.click('.navbar-brand');
-    await expect(page).toHaveURL(/index\.html|\/$/);
+    await expect(page).toHaveURL(/index\.html$/);
   });
 
   test('404.html has noindex, nofollow robots directive', async ({ page }) => {

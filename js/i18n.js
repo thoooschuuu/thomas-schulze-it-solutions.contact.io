@@ -7,6 +7,7 @@
 
   var LANG_KEY = 'ts_lang';
   var currentLang = 'de';
+  var activeFilter = null; // null = All; resets to null on every page load
 
   /* ====================================================
      TRANSLATIONS
@@ -64,6 +65,7 @@
       'projects.present':    'present',
       'projects.cta.text':   'Have a project in mind? Let\'s build something great together.',
       'projects.cta.btn':    'Get in Touch →',
+      'projects.filter.all': 'All',
 
       /* --- Contact page --- */
       'contact.label':                   'Let\'s Talk',
@@ -161,6 +163,7 @@
       'projects.present':    'heute',
       'projects.cta.text':   'Haben Sie ein Projekt im Sinn? Lassen Sie uns gemeinsam etwas Großartiges entwickeln.',
       'projects.cta.btn':    'Kontakt aufnehmen →',
+      'projects.filter.all': 'Alle',
 
       /* --- Contact page --- */
       'contact.label':                   'Kontakt',
@@ -549,6 +552,77 @@
   }
 
   /* ====================================================
+     FILTER BUTTON RENDERING
+  ==================================================== */
+  function renderFilterButtons(lang) {
+    var container = document.getElementById('projectsFilter');
+    if (!container) return;
+
+    var t = translations[lang];
+    var techSet = {};
+    var projects = projectsData[lang];
+    for (var i = 0; i < projects.length; i++) {
+      var techs = projects[i].technologies;
+      for (var j = 0; j < techs.length; j++) {
+        techSet[techs[j]] = true;
+      }
+    }
+    var techList = Object.keys(techSet).sort(function (a, b) {
+      return a.localeCompare(b);
+    });
+
+    var allLabel = t['projects.filter.all'];
+    var html = '<button class="filter-btn' + (activeFilter === null ? ' is-active' : '') +
+      '" data-filter="*" type="button">' + escapeHtml(allLabel) + '</button>';
+
+    for (var k = 0; k < techList.length; k++) {
+      var tech = techList[k];
+      html += '<button class="filter-btn' + (activeFilter === tech ? ' is-active' : '') +
+        '" data-filter="' + escapeHtml(tech) + '" type="button">' + escapeHtml(tech) + '</button>';
+    }
+
+    container.innerHTML = html;
+
+    container.onclick = function (e) {
+      var btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      var filter = btn.getAttribute('data-filter');
+      if (filter === '*') {
+        activeFilter = null;
+      } else if (activeFilter === filter) {
+        activeFilter = null;
+      } else {
+        activeFilter = filter;
+      }
+      renderFilterButtons(lang);
+      applyFilter();
+    };
+  }
+
+  function applyFilter() {
+    var grid = document.getElementById('projectsGrid');
+    if (!grid) return;
+    var cards = grid.querySelectorAll('.project-card');
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      if (activeFilter === null) {
+        card.classList.remove('is-hidden');
+      } else {
+        var techs = (card.getAttribute('data-technologies') || '').split('|');
+        var matches = false;
+        for (var j = 0; j < techs.length; j++) {
+          if (techs[j] === activeFilter) { matches = true; break; }
+        }
+        if (matches) {
+          card.classList.remove('is-hidden');
+        } else {
+          card.classList.add('is-hidden');
+        }
+      }
+    }
+  }
+
+  /* ====================================================
      PROJECT RENDERING
   ==================================================== */
   function renderProjects(lang) {
@@ -573,7 +647,7 @@
       var headerId = 'ph-' + safeId;
       var bodyId   = 'pb-' + safeId;
 
-      return '<article class="project-card" id="pc-' + safeId + '">' +
+      return '<article class="project-card" id="pc-' + safeId + '" data-technologies="' + escapeHtml(p.technologies.join('|')) + '">' +
         '<div class="project-card-header" id="' + headerId + '" role="button" tabindex="0" aria-expanded="false" aria-controls="' + bodyId + '">' +
           '<div class="project-card-header-info">' +
             '<div class="project-meta">' +
@@ -663,6 +737,8 @@
         firstBody.style.maxHeight = firstBody.scrollHeight + 'px';
       }
     }
+
+    applyFilter();
   }
 
   /* ====================================================
@@ -692,6 +768,7 @@
 
     document.documentElement.setAttribute('lang', lang);
 
+    renderFilterButtons(lang);
     renderProjects(lang);
   }
 

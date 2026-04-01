@@ -69,34 +69,26 @@ test.describe('Contact form – label accessibility', () => {
   });
 
   test('name label is present and associated with input', async ({ page }) => {
-    const label = page.locator('label[for="name"]');
-    await expect(label).toBeAttached();
-    await expect(label).toContainText('Name');
+    await expect(page.getByLabel('Name').first()).toBeAttached();
   });
 
   test('email label is present and associated with input', async ({ page }) => {
-    const label = page.locator('label[for="email"]');
-    await expect(label).toBeAttached();
-    await expect(label).toContainText('E-Mail');
+    await expect(page.getByLabel('E-Mail')).toBeAttached();
   });
 
   test('subject label is present and associated with select', async ({ page }) => {
-    const label = page.locator('label[for="subject"]');
-    await expect(label).toBeAttached();
-    await expect(label).toContainText('Betreff');
+    await expect(page.getByLabel('Betreff')).toBeAttached();
   });
 
   test('message label is present and associated with textarea', async ({ page }) => {
-    const label = page.locator('label[for="message"]');
-    await expect(label).toBeAttached();
-    await expect(label).toContainText('Nachricht');
+    await expect(page.getByLabel('Nachricht')).toBeAttached();
   });
 
   test('labels translate to English', async ({ page }) => {
     await page.evaluate(() => window.i18n.setLanguage('en'));
-    await expect(page.locator('label[for="email"]')).toContainText('Email');
-    await expect(page.locator('label[for="subject"]')).toContainText('Subject');
-    await expect(page.locator('label[for="message"]')).toContainText('Message');
+    await expect(page.getByLabel('Email')).toBeAttached();
+    await expect(page.getByLabel('Subject')).toBeAttached();
+    await expect(page.getByLabel('Message')).toBeAttached();
   });
 });
 

@@ -183,6 +183,45 @@ test.describe('SEO meta tags', () => {
     expect(ldJson['name']).toBe('Thomas Schulze');
     expect(ldJson['url']).toBe('https://thomas-schulze-it-solutions.de/');
   });
+
+  test('about.html has JSON-LD ProfilePage structured data', async ({ page }) => {
+    await page.goto('/about.html');
+    await page.waitForLoadState('domcontentloaded');
+    const ldJson = await page.evaluate(() => {
+      const el = document.querySelector('script[type="application/ld+json"]');
+      return el ? JSON.parse(el.textContent) : null;
+    });
+    expect(ldJson).not.toBeNull();
+    expect(ldJson['@type']).toBe('ProfilePage');
+    expect(ldJson.mainEntity['@type']).toBe('Person');
+    expect(ldJson.mainEntity.name).toBe('Thomas Schulze');
+  });
+
+  test('contact.html has JSON-LD ContactPage structured data', async ({ page }) => {
+    await page.goto('/contact.html');
+    await page.waitForLoadState('domcontentloaded');
+    const ldJson = await page.evaluate(() => {
+      const el = document.querySelector('script[type="application/ld+json"]');
+      return el ? JSON.parse(el.textContent) : null;
+    });
+    expect(ldJson).not.toBeNull();
+    expect(ldJson['@type']).toBe('ContactPage');
+    expect(ldJson.mainEntity['@type']).toBe('Organization');
+    expect(ldJson.mainEntity.name).toBe('Thomas Schulze IT Solutions');
+  });
+
+  test('projects.html has JSON-LD CollectionPage structured data', async ({ page }) => {
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+    const ldJson = await page.evaluate(() => {
+      const el = document.querySelector('script[type="application/ld+json"]');
+      return el ? JSON.parse(el.textContent) : null;
+    });
+    expect(ldJson).not.toBeNull();
+    expect(ldJson['@type']).toBe('CollectionPage');
+    expect(ldJson.mainEntity['@type']).toBe('ItemList');
+    expect(ldJson.mainEntity.itemListElement.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 test.describe('Custom 404 page', () => {

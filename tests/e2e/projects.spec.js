@@ -177,3 +177,98 @@ test.describe('Projects page – accordion interaction', () => {
   });
 });
 
+test.describe('Projects page – technology filter', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+  });
+
+  test('#projectsFilter container is present', async ({ page }) => {
+    await expect(page.locator('#projectsFilter')).toBeAttached();
+  });
+
+  test('"Alle" button is rendered and is-active by default', async ({ page }) => {
+    const allBtn = page.locator('.filter-btn[data-filter="*"]');
+    await expect(allBtn).toBeVisible();
+    await expect(allBtn).toHaveClass(/is-active/);
+  });
+
+  test('filter buttons are rendered for each technology', async ({ page }) => {
+    const count = await page.locator('.filter-btn').count();
+    expect(count).toBeGreaterThan(1);
+  });
+
+  test('clicking a technology filter hides non-matching cards', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await expect(csharpBtn).toBeVisible();
+    await csharpBtn.click();
+
+    const visibleCount = await page.locator('.project-card:not(.is-hidden)').count();
+    const hiddenCount = await page.locator('.project-card.is-hidden').count();
+    expect(visibleCount).toBeGreaterThan(0);
+    expect(hiddenCount).toBeGreaterThan(0);
+  });
+
+  test('active filter button gets is-active class; All loses it', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    const allBtn = page.locator('.filter-btn[data-filter="*"]');
+    await csharpBtn.click();
+    await expect(csharpBtn).toHaveClass(/is-active/);
+    const allClass = await allBtn.getAttribute('class');
+    expect(allClass ?? '').not.toContain('is-active');
+  });
+
+  test('clicking the active filter again resets to All (toggle off)', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await csharpBtn.click();
+    await csharpBtn.click();
+    const allBtn = page.locator('.filter-btn[data-filter="*"]');
+    await expect(allBtn).toHaveClass(/is-active/);
+    const hiddenCount = await page.locator('.project-card.is-hidden').count();
+    expect(hiddenCount).toBe(0);
+  });
+
+  test('"All" button resets filter and shows all cards', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await csharpBtn.click();
+    const allBtn = page.locator('.filter-btn[data-filter="*"]');
+    await allBtn.click();
+    await expect(allBtn).toHaveClass(/is-active/);
+    const hiddenCount = await page.locator('.project-card.is-hidden').count();
+    expect(hiddenCount).toBe(0);
+  });
+
+  test('"Alle" shown in DE, "All" shown in EN', async ({ page }) => {
+    const allBtnDe = page.locator('.filter-btn[data-filter="*"]');
+    await expect(allBtnDe).toHaveText('Alle');
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+    const allBtnEn = page.locator('.filter-btn[data-filter="*"]');
+    await expect(allBtnEn).toHaveText('All');
+  });
+
+  test('filter stays active after language switch', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await csharpBtn.click();
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+    const csharpBtnEn = page.locator('.filter-btn[data-filter="C#"]');
+    await expect(csharpBtnEn).toHaveClass(/is-active/);
+  });
+
+  test('filter button is keyboard-accessible via Enter key', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await csharpBtn.focus();
+    await csharpBtn.press('Enter');
+    await expect(csharpBtn).toHaveClass(/is-active/);
+    const hiddenCount = await page.locator('.project-card.is-hidden').count();
+    expect(hiddenCount).toBeGreaterThan(0);
+  });
+
+  test('filter button is keyboard-accessible via Space key', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await csharpBtn.focus();
+    await csharpBtn.press(' ');
+    await expect(csharpBtn).toHaveClass(/is-active/);
+  });
+});
+

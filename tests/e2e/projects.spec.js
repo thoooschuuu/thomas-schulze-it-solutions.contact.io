@@ -588,7 +588,7 @@ test.describe('Projects page – domain filter', () => {
   });
 
   // Internationalisation
-  test('"Architecture" button shows "Architecture" in EN and "Architektur" in DE', async ({ page }) => {
+  test('"Architecture" button shows "Architektur" in DE and "Architecture" in EN', async ({ page }) => {
     const btn = page.locator('#projectsDomainFilter .filter-btn[data-domain-filter="Architecture"]');
     await expect(btn).toHaveText('Architektur');
     await page.evaluate(() => window.i18n.setLanguage('en'));

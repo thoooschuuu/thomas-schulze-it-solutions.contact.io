@@ -993,7 +993,7 @@
           history.replaceState(null, '', '#' + card.id);
           body.style.maxHeight = body.scrollHeight + 'px';
         } else {
-          history.replaceState(null, '', location.pathname);
+          history.replaceState(null, '', location.pathname + location.search);
           // Re-pin current height before collapsing; the inline style may have been
           // cleared by transitionend, leaving body unrestricted (max-height: none from CSS).
           body.style.maxHeight = body.scrollHeight + 'px';
@@ -1042,7 +1042,8 @@
         targetCard.classList.add('is-open');
         targetHeader.setAttribute('aria-expanded', 'true');
         targetBody.style.maxHeight = targetBody.scrollHeight + 'px';
-        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        targetCard.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
       }
     } else {
       var firstHeader = grid.querySelector('.project-card-header');

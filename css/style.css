@@ -586,6 +586,7 @@ img {
   transition: border-color var(--transition), box-shadow var(--transition);
   position: relative;
   overflow: hidden;
+  scroll-margin-top: 80px; /* fixed navbar (64px) + breathing room */
 }
 
 .project-card::before {

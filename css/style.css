@@ -1184,6 +1184,22 @@ html[data-theme="light"] .navbar-brand img {
   outline-offset: 2px;
 }
 
+.filter-btn--group {
+  font-style: italic;
+}
+
+.filter-btn--overflow {
+  display: none;
+}
+
+.project-filter[data-overflow-expanded] .filter-btn--overflow {
+  display: inline-block;
+}
+
+.filter-btn--toggle-overflow {
+  border-style: dashed;
+}
+
 .project-card.is-hidden {
   display: none;
 }

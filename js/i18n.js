@@ -7,7 +7,9 @@
 
   var LANG_KEY = 'ts_lang';
   var currentLang = 'de';
-  var activeFilter = null; // null = All; resets to null on every page load
+  var activeFilter = null;        // null = All; resets to null on every page load
+  var activeFilterIsGroup = false; // true when activeFilter is a filterGroups key
+  var overflowExpanded = false;    // true when rare (1-project) individual buttons are shown
 
   /* ====================================================
      TRANSLATIONS
@@ -67,6 +69,19 @@
       'projects.cta.btn':    'Get in Touch →',
       'projects.filter.all': 'All',
       'projects.filter.toolbar.label': 'Filter by technology',
+      'projects.filter.group.dotnet':        '.NET',
+      'projects.filter.group.aspnet':        'ASP.NET',
+      'projects.filter.group.azure':         'Azure',
+      'projects.filter.group.sql':           'SQL',
+      'projects.filter.group.frontend':      'Frontend',
+      'projects.filter.group.apistandards':  'API / Standards',
+      'projects.filter.group.cloudinfra':    'Cloud / Infra',
+      'projects.filter.group.versioncontrol':'Version Control',
+      'projects.filter.group.cicd':          'CI/CD',
+      'projects.filter.group.alm':           'ALM / Tracking',
+      'projects.filter.group.visualstudio':  'Visual Studio',
+      'projects.filter.more':                'more',
+      'projects.filter.less':                'Show less',
 
       /* --- Contact page --- */
       'contact.label':                   'Let\'s Talk',
@@ -166,6 +181,19 @@
       'projects.cta.btn':    'Kontakt aufnehmen →',
       'projects.filter.all': 'Alle',
       'projects.filter.toolbar.label': 'Nach Technologie filtern',
+      'projects.filter.group.dotnet':        '.NET',
+      'projects.filter.group.aspnet':        'ASP.NET',
+      'projects.filter.group.azure':         'Azure',
+      'projects.filter.group.sql':           'SQL',
+      'projects.filter.group.frontend':      'Frontend',
+      'projects.filter.group.apistandards':  'API / Standards',
+      'projects.filter.group.cloudinfra':    'Cloud / Infra',
+      'projects.filter.group.versioncontrol':'Versionsverwaltung',
+      'projects.filter.group.cicd':          'CI/CD',
+      'projects.filter.group.alm':           'ALM / Tracking',
+      'projects.filter.group.visualstudio':  'Visual Studio',
+      'projects.filter.more':                'mehr',
+      'projects.filter.less':                'Weniger',
 
       /* --- Contact page --- */
       'contact.label':                   'Kontakt',
@@ -508,6 +536,24 @@
   };
 
   /* ====================================================
+     FILTER GROUPS
+     Order here determines button render order.
+  ==================================================== */
+  var filterGroups = [
+    { key: 'dotnet',         members: ['.NET Framework', '.NET', '.NET 6', '.NET 8', '.NET 10'] },
+    { key: 'aspnet',         members: ['ASP.NET', 'ASP.NET Core'] },
+    { key: 'azure',          members: ['Azure', 'Azure DevOps', 'API Management'] },
+    { key: 'sql',            members: ['SQL Server', 'MS SQL Server'] },
+    { key: 'frontend',       members: ['Angular', 'React', 'TypeScript', 'JavaScript'] },
+    { key: 'apistandards',   members: ['REST', 'OpenAPI 3', 'Swagger', 'Spectral', 'YAML'] },
+    { key: 'cloudinfra',     members: ['AWS', 'Terraform'] },
+    { key: 'versioncontrol', members: ['git', 'TFS', 'Bitbucket'] },
+    { key: 'cicd',           members: ['Jenkins', 'Octopus', 'TeamCity'] },
+    { key: 'alm',            members: ['Jira', 'Target Process', 'ServiceNow'] },
+    { key: 'visualstudio',   members: ['Visual Studio', 'Visual Studio Code'] }
+  ];
+
+  /* ====================================================
      DOMAIN ICONS
   ==================================================== */
   var domainIcons = {
@@ -556,54 +602,188 @@
   /* ====================================================
      FILTER BUTTON RENDERING
   ==================================================== */
+  function getActiveMembers() {
+    if (activeFilter === null) return null;
+    if (activeFilterIsGroup) {
+      for (var i = 0; i < filterGroups.length; i++) {
+        if (filterGroups[i].key === activeFilter) return filterGroups[i].members;
+      }
+      return null;
+    }
+    return [activeFilter];
+  }
+
   function renderFilterButtons(lang) {
     var container = document.getElementById('projectsFilter');
     if (!container) return;
 
     var t = translations[lang];
-    var techSet = {};
     var projects = projectsData[lang];
+
+    // Build set of all technologies used by at least one project
+    var techSet = {};
     for (var i = 0; i < projects.length; i++) {
       var techs = projects[i].technologies;
-      for (var j = 0; j < techs.length; j++) {
-        techSet[techs[j]] = true;
+      for (var j = 0; j < techs.length; j++) { techSet[techs[j]] = true; }
+    }
+
+    // Build lookup of tech -> group key (to exclude grouped techs from individual buttons)
+    var techToGroupKey = {};
+    for (var gi = 0; gi < filterGroups.length; gi++) {
+      var group = filterGroups[gi];
+      for (var mi = 0; mi < group.members.length; mi++) {
+        techToGroupKey[group.members[mi]] = group.key;
       }
     }
-    var techList = Object.keys(techSet).sort(function (a, b) {
-      return a.localeCompare(b);
-    });
 
+    // "All" button
     var allLabel = t['projects.filter.all'];
     var html = '<button class="filter-btn' + (activeFilter === null ? ' is-active' : '') +
       '" data-filter="*" type="button">' + escapeHtml(allLabel) + '</button>';
 
-    for (var k = 0; k < techList.length; k++) {
-      var tech = techList[k];
-      html += '<button class="filter-btn' + (activeFilter === tech ? ' is-active' : '') +
-        '" data-filter="' + escapeHtml(tech) + '" type="button">' + escapeHtml(tech) + '</button>';
+    // Group buttons (defined order; skip groups with zero matching projects)
+    for (var g = 0; g < filterGroups.length; g++) {
+      var grp = filterGroups[g];
+      var groupHasProjects = false;
+      for (var gm = 0; gm < grp.members.length; gm++) {
+        if (techSet[grp.members[gm]]) { groupHasProjects = true; break; }
+      }
+      if (!groupHasProjects) continue;
+
+      var isGroupActive = activeFilterIsGroup && activeFilter === grp.key;
+      var groupLabel = t['projects.filter.group.' + grp.key] || grp.key;
+      html += '<button class="filter-btn filter-btn--group' + (isGroupActive ? ' is-active' : '') +
+        '" data-filter-group="' + escapeHtml(grp.key) + '" type="button">' +
+        escapeHtml(groupLabel) + '</button>';
+    }
+
+    // Individual buttons: techs not covered by any group, sorted alphabetically
+    var individualTechs = [];
+    for (var tech in techSet) {
+      if (techSet.hasOwnProperty(tech) && !techToGroupKey[tech]) {
+        individualTechs.push(tech);
+      }
+    }
+    individualTechs.sort(function (a, b) { return a.localeCompare(b); });
+
+    // Count how many projects use each individual tech (to split frequent vs rare)
+    var techCount = {};
+    for (var ci = 0; ci < projects.length; ci++) {
+      var ctechs = projects[ci].technologies;
+      for (var cj = 0; cj < ctechs.length; cj++) {
+        var ct = ctechs[cj];
+        if (!techToGroupKey[ct]) { techCount[ct] = (techCount[ct] || 0) + 1; }
+      }
+    }
+
+    var frequentTechs = [];
+    var rareTechs = [];
+    for (var ii = 0; ii < individualTechs.length; ii++) {
+      if ((techCount[individualTechs[ii]] || 0) >= 2) {
+        frequentTechs.push(individualTechs[ii]);
+      } else {
+        rareTechs.push(individualTechs[ii]);
+      }
+    }
+
+    // Auto-expand overflow if the active filter is a rare tech
+    if (!activeFilterIsGroup && activeFilter !== null && rareTechs.indexOf(activeFilter) !== -1) {
+      overflowExpanded = true;
+    }
+
+    // Frequent individual buttons (always visible)
+    for (var fi = 0; fi < frequentTechs.length; fi++) {
+      var freqTech = frequentTechs[fi];
+      var isFreqActive = !activeFilterIsGroup && activeFilter === freqTech;
+      html += '<button class="filter-btn' + (isFreqActive ? ' is-active' : '') +
+        '" data-filter="' + escapeHtml(freqTech) + '" type="button">' + escapeHtml(freqTech) + '</button>';
+    }
+
+    // Rare individual buttons (overflow, hidden until expanded)
+    for (var ri = 0; ri < rareTechs.length; ri++) {
+      var rareTech = rareTechs[ri];
+      var isRareActive = !activeFilterIsGroup && activeFilter === rareTech;
+      html += '<button class="filter-btn filter-btn--overflow' + (isRareActive ? ' is-active' : '') +
+        '" data-filter="' + escapeHtml(rareTech) + '" type="button">' + escapeHtml(rareTech) + '</button>';
+    }
+
+    // Toggle button (only when rare techs exist)
+    if (rareTechs.length > 0) {
+      var moreLabel = overflowExpanded
+        ? t['projects.filter.less']
+        : '+' + rareTechs.length + '\u00a0' + t['projects.filter.more'];
+      html += '<button class="filter-btn filter-btn--toggle-overflow" type="button">' +
+        escapeHtml(moreLabel) + '</button>';
     }
 
     container.setAttribute('aria-label', t['projects.filter.toolbar.label']);
     container.innerHTML = html;
 
+    if (overflowExpanded) {
+      container.setAttribute('data-overflow-expanded', '');
+    } else {
+      container.removeAttribute('data-overflow-expanded');
+    }
+
     container.onclick = function (e) {
       var btn = e.target.closest('.filter-btn');
       if (!btn) return;
-      var filter = btn.getAttribute('data-filter');
-      if (filter === '*' || activeFilter === filter) {
+
+      // Overflow toggle button
+      if (btn.classList.contains('filter-btn--toggle-overflow')) {
+        if (overflowExpanded) {
+          // Reset filter if it's a rare tech, then collapse
+          if (!activeFilterIsGroup && activeFilter !== null && rareTechs.indexOf(activeFilter) !== -1) {
+            activeFilter = null;
+            activeFilterIsGroup = false;
+          }
+          overflowExpanded = false;
+        } else {
+          overflowExpanded = true;
+        }
+        renderFilterButtons(currentLang);
+        applyFilter();
+        return;
+      }
+
+      var groupKey = btn.getAttribute('data-filter-group');
+      var filterVal = btn.getAttribute('data-filter');
+
+      if (filterVal === '*') {
         activeFilter = null;
-      } else {
-        activeFilter = filter;
+        activeFilterIsGroup = false;
+      } else if (groupKey) {
+        if (activeFilterIsGroup && activeFilter === groupKey) {
+          activeFilter = null;
+          activeFilterIsGroup = false;
+        } else {
+          activeFilter = groupKey;
+          activeFilterIsGroup = true;
+        }
+      } else if (filterVal) {
+        if (!activeFilterIsGroup && activeFilter === filterVal) {
+          activeFilter = null;
+          activeFilterIsGroup = false;
+        } else {
+          activeFilter = filterVal;
+          activeFilterIsGroup = false;
+        }
       }
 
       // Update is-active classes in place so keyboard focus is preserved
       var buttons = container.querySelectorAll('.filter-btn');
       for (var i = 0; i < buttons.length; i++) {
         var b = buttons[i];
-        var bFilter = b.getAttribute('data-filter');
-        var isActive =
-          (activeFilter === null && bFilter === '*') ||
-          (activeFilter !== null && bFilter === activeFilter);
+        var bGroupKey = b.getAttribute('data-filter-group');
+        var bFilter   = b.getAttribute('data-filter');
+        var isActive = false;
+        if (activeFilter === null) {
+          isActive = (bFilter === '*');
+        } else if (activeFilterIsGroup) {
+          isActive = (bGroupKey === activeFilter);
+        } else {
+          isActive = (bFilter === activeFilter);
+        }
         b.classList.toggle('is-active', isActive);
       }
       applyFilter();
@@ -613,22 +793,23 @@
   function applyFilter() {
     var grid = document.getElementById('projectsGrid');
     if (!grid) return;
+    var activeMembers = getActiveMembers();
     var cards = grid.querySelectorAll('.project-card');
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
-      if (activeFilter === null) {
+      if (activeMembers === null) {
         card.classList.remove('is-hidden');
       } else {
-        var techs = (card.getAttribute('data-technologies') || '').split('|');
+        var cardTechs = (card.getAttribute('data-technologies') || '').split('|');
         var matches = false;
-        for (var j = 0; j < techs.length; j++) {
-          if (techs[j] === activeFilter) { matches = true; break; }
+        for (var j = 0; j < cardTechs.length; j++) {
+          for (var m = 0; m < activeMembers.length; m++) {
+            if (cardTechs[j] === activeMembers[m]) { matches = true; break; }
+          }
+          if (matches) break;
         }
-        if (matches) {
-          card.classList.remove('is-hidden');
-        } else {
-          card.classList.add('is-hidden');
-        }
+        if (matches) { card.classList.remove('is-hidden'); }
+        else { card.classList.add('is-hidden'); }
       }
     }
   }

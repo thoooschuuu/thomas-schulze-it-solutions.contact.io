@@ -272,3 +272,242 @@ test.describe('Projects page – technology filter', () => {
   });
 });
 
+test.describe('Projects page – grouped technology filter', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+  });
+
+  test('group filter buttons are rendered with data-filter-group attribute', async ({ page }) => {
+    const count = await page.locator('.filter-btn[data-filter-group]').count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('.NET group button is rendered', async ({ page }) => {
+    await expect(page.locator('.filter-btn[data-filter-group="dotnet"]')).toBeVisible();
+  });
+
+  test('group buttons appear before individual buttons in the DOM', async ({ page }) => {
+    const allBtns = page.locator('.filter-btn');
+    const firstGroupIdx = await allBtns.evaluateAll(btns => {
+      for (var i = 0; i < btns.length; i++) {
+        if (btns[i].hasAttribute('data-filter-group')) return i;
+      }
+      return -1;
+    });
+    const firstIndividualIdx = await allBtns.evaluateAll(btns => {
+      for (var i = 0; i < btns.length; i++) {
+        if (!btns[i].hasAttribute('data-filter-group') && btns[i].getAttribute('data-filter') !== '*') return i;
+      }
+      return -1;
+    });
+    expect(firstGroupIdx).toBeGreaterThan(0);
+    expect(firstIndividualIdx).toBeGreaterThan(firstGroupIdx);
+  });
+
+  test('group button label is translated (DE: "Versionsverwaltung", EN: "Version Control")', async ({ page }) => {
+    await expect(page.locator('.filter-btn[data-filter-group="versioncontrol"]')).toHaveText('Versionsverwaltung');
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+    await expect(page.locator('.filter-btn[data-filter-group="versioncontrol"]')).toHaveText('Version Control');
+  });
+
+  test('clicking .NET group button filters projects', async ({ page }) => {
+    await page.locator('.filter-btn[data-filter-group="dotnet"]').click();
+    const visible = await page.locator('.project-card:not(.is-hidden)').count();
+    const hidden  = await page.locator('.project-card.is-hidden').count();
+    expect(visible).toBeGreaterThan(0);
+    expect(hidden).toBeGreaterThan(0);
+  });
+
+  test('.NET group shows projects with any .NET variant (multi-member matching)', async ({ page }) => {
+    await page.locator('.filter-btn[data-filter-group="dotnet"]').click();
+    const result = await page.locator('.project-card:not(.is-hidden)').evaluateAll(cards => {
+      var groupMembers = ['.NET Framework', '.NET', '.NET 6', '.NET 8', '.NET 10'];
+      var memberSet = {};
+      for (var i = 0; i < groupMembers.length; i++) { memberSet[groupMembers[i]] = true; }
+      var allVisibleMatchGroup = cards.length > 0;
+      var hasVersionSpecificVariant = false;
+      for (var i = 0; i < cards.length; i++) {
+        var techs = (cards[i].getAttribute('data-technologies') || '').split('|');
+        if (!techs.some(function (t) { return memberSet[t]; })) { allVisibleMatchGroup = false; }
+        if (techs.some(function (t) { return t === '.NET 6' || t === '.NET 8' || t === '.NET 10'; })) {
+          hasVersionSpecificVariant = true;
+        }
+      }
+      return { allVisibleMatchGroup: allVisibleMatchGroup, hasVersionSpecificVariant: hasVersionSpecificVariant };
+    });
+    expect(result.allVisibleMatchGroup).toBeTruthy();
+    expect(result.hasVersionSpecificVariant).toBeTruthy();
+  });
+
+  test('group button gets is-active class; All loses it', async ({ page }) => {
+    const groupBtn = page.locator('.filter-btn[data-filter-group="dotnet"]');
+    const allBtn   = page.locator('.filter-btn[data-filter="*"]');
+    await groupBtn.click();
+    await expect(groupBtn).toHaveClass(/is-active/);
+    await expect(allBtn).not.toHaveClass(/is-active/);
+  });
+
+  test('clicking active group button again resets to All (toggle off)', async ({ page }) => {
+    const groupBtn = page.locator('.filter-btn[data-filter-group="dotnet"]');
+    await groupBtn.click();
+    await groupBtn.click();
+    await expect(page.locator('.filter-btn[data-filter="*"]')).toHaveClass(/is-active/);
+    expect(await page.locator('.project-card.is-hidden').count()).toBe(0);
+  });
+
+  test('group filter stays active after language switch', async ({ page }) => {
+    await page.locator('.filter-btn[data-filter-group="dotnet"]').click();
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+    await expect(page.locator('.filter-btn[data-filter-group="dotnet"]')).toHaveClass(/is-active/);
+  });
+
+  test('same cards visible before and after language switch with group filter active', async ({ page }) => {
+    await page.locator('.filter-btn[data-filter-group="dotnet"]').click();
+    const before = await page.locator('.project-card:not(.is-hidden)').count();
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+    const after = await page.locator('.project-card:not(.is-hidden)').count();
+    expect(after).toBe(before);
+  });
+
+  test('group filter button is keyboard-accessible via Enter key', async ({ page }) => {
+    const groupBtn = page.locator('.filter-btn[data-filter-group="dotnet"]');
+    await groupBtn.focus();
+    await groupBtn.press('Enter');
+    await expect(groupBtn).toHaveClass(/is-active/);
+  });
+
+  test('group filter button is keyboard-accessible via Space key', async ({ page }) => {
+    const groupBtn = page.locator('.filter-btn[data-filter-group="dotnet"]');
+    await groupBtn.focus();
+    await groupBtn.press(' ');
+    await expect(groupBtn).toHaveClass(/is-active/);
+  });
+
+  test('C# individual button still works after group buttons are added', async ({ page }) => {
+    const csharpBtn = page.locator('.filter-btn[data-filter="C#"]');
+    await expect(csharpBtn).toBeVisible();
+    await csharpBtn.click();
+    await expect(csharpBtn).toHaveClass(/is-active/);
+    expect(await page.locator('.project-card.is-hidden').count()).toBeGreaterThan(0);
+  });
+});
+
+test.describe('Projects page – additional technology groups', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+  });
+
+  test('Frontend group button is rendered', async ({ page }) => {
+    await expect(page.locator('.filter-btn[data-filter-group="frontend"]')).toBeVisible();
+  });
+
+  test('API / Standards group button is rendered', async ({ page }) => {
+    await expect(page.locator('.filter-btn[data-filter-group="apistandards"]')).toBeVisible();
+  });
+
+  test('Cloud / Infra group button is rendered', async ({ page }) => {
+    await expect(page.locator('.filter-btn[data-filter-group="cloudinfra"]')).toBeVisible();
+  });
+
+  test('Frontend group filters projects correctly', async ({ page }) => {
+    await page.locator('.filter-btn[data-filter-group="frontend"]').click();
+    const visible = await page.locator('.project-card:not(.is-hidden)').count();
+    const hidden  = await page.locator('.project-card.is-hidden').count();
+    expect(visible).toBeGreaterThan(0);
+    expect(hidden).toBeGreaterThan(0);
+  });
+
+  test('Angular is no longer an individual button (it is in Frontend group)', async ({ page }) => {
+    const angularBtn = page.locator('.filter-btn[data-filter="Angular"]');
+    expect(await angularBtn.count()).toBe(0);
+  });
+});
+
+test.describe('Projects page – filter overflow toggle', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+  });
+
+  test('toggle button is rendered when rare techs exist', async ({ page }) => {
+    await expect(page.locator('.filter-btn--toggle-overflow')).toBeVisible();
+  });
+
+  test('overflow buttons are hidden by default', async ({ page }) => {
+    const overflowBtns = page.locator('.filter-btn--overflow');
+    const count = await overflowBtns.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      await expect(overflowBtns.nth(i)).toBeHidden();
+    }
+  });
+
+  test('toggle button shows count of hidden techs', async ({ page }) => {
+    const toggleBtn = page.locator('.filter-btn--toggle-overflow');
+    const text = await toggleBtn.textContent();
+    expect(text).toMatch(/^\+\d/);
+  });
+
+  test('clicking toggle reveals overflow buttons', async ({ page }) => {
+    await page.locator('.filter-btn--toggle-overflow').click();
+    const overflowBtns = page.locator('.filter-btn--overflow');
+    const count = await overflowBtns.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      await expect(overflowBtns.nth(i)).toBeVisible();
+    }
+  });
+
+  test('toggle button text changes to "Show less" after expanding', async ({ page }) => {
+    await page.locator('.filter-btn--toggle-overflow').click();
+    const text = await page.locator('.filter-btn--toggle-overflow').textContent();
+    expect(text).toMatch(/weniger|show less/i);
+  });
+
+  test('clicking toggle again collapses overflow', async ({ page }) => {
+    await page.locator('.filter-btn--toggle-overflow').click();
+    await page.locator('.filter-btn--toggle-overflow').click();
+    const overflowBtns = page.locator('.filter-btn--overflow');
+    const count = await overflowBtns.count();
+    for (let i = 0; i < count; i++) {
+      await expect(overflowBtns.nth(i)).toBeHidden();
+    }
+  });
+
+  test('collapsing while rare tech is active resets filter to All', async ({ page }) => {
+    await page.locator('.filter-btn--toggle-overflow').click();
+    const firstOverflow = page.locator('.filter-btn--overflow').first();
+    await firstOverflow.click();
+    // Now collapse
+    await page.locator('.filter-btn--toggle-overflow').click();
+    await expect(page.locator('.filter-btn[data-filter="*"]')).toHaveClass(/is-active/);
+    expect(await page.locator('.project-card.is-hidden').count()).toBe(0);
+  });
+
+  test('overflow remains expanded after language switch if active filter is rare', async ({ page }) => {
+    await page.locator('.filter-btn--toggle-overflow').click();
+    const firstOverflow = page.locator('.filter-btn--overflow').first();
+    await firstOverflow.click();
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+    const overflowBtns = page.locator('.filter-btn--overflow');
+    const count = await overflowBtns.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      await expect(overflowBtns.nth(i)).toBeVisible();
+    }
+  });
+
+  test('overflow toggle is keyboard-accessible via Enter', async ({ page }) => {
+    const toggleBtn = page.locator('.filter-btn--toggle-overflow');
+    await toggleBtn.focus();
+    await toggleBtn.press('Enter');
+    const overflowBtns = page.locator('.filter-btn--overflow');
+    await expect(overflowBtns.first()).toBeVisible();
+  });
+});
+

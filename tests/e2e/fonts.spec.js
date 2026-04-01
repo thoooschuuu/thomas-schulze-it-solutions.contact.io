@@ -4,7 +4,7 @@
  *
  * Verifies that:
  * - No failed font requests occur on any page.
- * - The computed font-family on <body> resolves to Arimo (not a system fallback).
+ * - Arimo is truly loaded (via Font Loading API), not just listed in the CSS stack.
  * - The four retained .woff2 files are served (HTTP 200).
  * - The four removed latin-ext .woff2 files return 404 (regression guard).
  */
@@ -36,15 +36,38 @@ const REMOVED_FONTS = [
 test.describe('Font loading – no failed requests', () => {
   for (const path of PAGES) {
     test(`${path} loads without failed font requests`, async ({ page }) => {
-      const failedFonts = [];
+      const failedFontsNetwork = [];
+      const failedFontsHttp = [];
+      const requestedFonts = [];
+
+      page.on('request', req => {
+        const url = new URL(req.url());
+        if (url.pathname.endsWith('.woff2')) requestedFonts.push(url.pathname);
+      });
+
       page.on('requestfailed', req => {
-        if (req.url().includes('.woff2')) failedFonts.push(req.url());
+        if (req.url().includes('.woff2')) failedFontsNetwork.push(req.url());
+      });
+
+      page.on('response', response => {
+        const url = response.url();
+        if (url.includes('.woff2') && response.status() >= 400) {
+          failedFontsHttp.push(`${url} -> ${response.status()}`);
+        }
       });
 
       await page.goto(path);
       await page.waitForLoadState('networkidle');
 
-      expect(failedFonts, `Failed font requests on ${path}`).toHaveLength(0);
+      expect(failedFontsNetwork, `Network-failed font requests on ${path}`).toHaveLength(0);
+      expect(failedFontsHttp, `HTTP error font responses on ${path}`).toHaveLength(0);
+
+      for (const removedFont of REMOVED_FONTS) {
+        expect(
+          requestedFonts,
+          `Removed font ${removedFont} should not be requested on ${path}`
+        ).not.toContain(removedFont);
+      }
     });
   }
 });
@@ -54,10 +77,15 @@ test.describe('Font rendering – Arimo is active', () => {
     await page.goto('/index.html');
     await page.waitForLoadState('networkidle');
 
-    const fontFamily = await page.evaluate(() =>
-      getComputedStyle(document.body).fontFamily
-    );
-    expect(fontFamily.toLowerCase()).toContain('arimo');
+    const isArimoLoaded = await page.evaluate(async () => {
+      if (!('fonts' in document) || typeof document.fonts.check !== 'function') {
+        return false;
+      }
+      await document.fonts.ready;
+      return document.fonts.check('16px "Arimo"');
+    });
+
+    expect(isArimoLoaded).toBe(true);
   });
 });
 

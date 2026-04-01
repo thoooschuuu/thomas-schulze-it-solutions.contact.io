@@ -990,8 +990,10 @@
         var open = card.classList.toggle('is-open');
         header.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
+          history.replaceState(null, '', '#' + card.id);
           body.style.maxHeight = body.scrollHeight + 'px';
         } else {
+          history.replaceState(null, '', location.pathname);
           // Re-pin current height before collapsing; the inline style may have been
           // cleared by transitionend, leaving body unrestricted (max-height: none from CSS).
           body.style.maxHeight = body.scrollHeight + 'px';
@@ -1027,15 +1029,31 @@
       });
     }
 
-    // Open the first (most recent) card by default
-    var firstHeader = grid.querySelector('.project-card-header');
-    if (firstHeader) {
-      var firstCard = firstHeader.closest('.project-card');
-      var firstBody = firstCard && firstCard.querySelector('.project-card-body');
-      if (firstCard && firstBody) {
-        firstCard.classList.add('is-open');
-        firstHeader.setAttribute('aria-expanded', 'true');
-        firstBody.style.maxHeight = firstBody.scrollHeight + 'px';
+    // Open the card matching the URL hash, or fall back to the first (most recent) card
+    var hashId = window.location.hash.slice(1); // e.g. "pc-abc123"
+    var targetHeader = hashId
+      ? grid.querySelector('#' + CSS.escape(hashId) + ' .project-card-header')
+      : null;
+
+    if (targetHeader) {
+      var targetCard = targetHeader.closest('.project-card');
+      var targetBody = targetCard && targetCard.querySelector('.project-card-body');
+      if (targetCard && targetBody) {
+        targetCard.classList.add('is-open');
+        targetHeader.setAttribute('aria-expanded', 'true');
+        targetBody.style.maxHeight = targetBody.scrollHeight + 'px';
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      var firstHeader = grid.querySelector('.project-card-header');
+      if (firstHeader) {
+        var firstCard = firstHeader.closest('.project-card');
+        var firstBody = firstCard && firstCard.querySelector('.project-card-body');
+        if (firstCard && firstBody) {
+          firstCard.classList.add('is-open');
+          firstHeader.setAttribute('aria-expanded', 'true');
+          firstBody.style.maxHeight = firstBody.scrollHeight + 'px';
+        }
       }
     }
 

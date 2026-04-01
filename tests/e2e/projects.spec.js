@@ -511,6 +511,87 @@ test.describe('Projects page – filter overflow toggle', () => {
   });
 });
 
+test.describe('Projects page – URL hash deep linking', () => {
+  test('opening a card updates the URL hash to #pc-{id}', async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+
+    const secondCard = page.locator('.project-card').nth(1);
+    const secondHeader = secondCard.locator('.project-card-header');
+    await secondHeader.click();
+
+    const cardId = await secondCard.getAttribute('id');
+    expect(await page.evaluate(() => window.location.hash)).toBe('#' + cardId);
+  });
+
+  test('closing a card clears the URL hash', async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Open the second card first, then close it
+    const secondCard = page.locator('.project-card').nth(1);
+    const secondHeader = secondCard.locator('.project-card-header');
+    await secondHeader.click();
+    await secondHeader.click();
+
+    expect(await page.evaluate(() => window.location.hash)).toBe('');
+  });
+
+  test('loading the page with a valid hash auto-opens the matching card', async ({ page }) => {
+    // First visit to get a stable card ID (second card, not the default-open first)
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+    const cardId = await page.locator('.project-card').nth(1).getAttribute('id');
+
+    // Detour via about:blank to force a full page reload (not a same-document hash navigation)
+    await page.goto('about:blank');
+    await page.goto('/projects.html#' + cardId);
+    await page.waitForLoadState('domcontentloaded');
+
+    const card = page.locator('#' + cardId);
+    const header = card.locator('.project-card-header');
+    await expect(card).toHaveClass(/is-open/);
+    await expect(header).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('first card is NOT auto-opened when a valid hash points to a different card', async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+    const secondCardId = await page.locator('.project-card').nth(1).getAttribute('id');
+
+    // Detour via about:blank to force a full page reload (not a same-document hash navigation)
+    await page.goto('about:blank');
+    await page.goto('/projects.html#' + secondCardId);
+    await page.waitForLoadState('domcontentloaded');
+
+    const firstHeader = page.locator('.project-card-header').first();
+    await expect(firstHeader).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('language switch preserves the current hash and re-opens the same card', async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('ts_lang'));
+    await page.goto('/projects.html');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Open second card (not the default)
+    const secondCard = page.locator('.project-card').nth(1);
+    await secondCard.locator('.project-card-header').click();
+    const cardId = await secondCard.getAttribute('id');
+
+    // Switch language — renderProjects runs again
+    await page.evaluate(() => window.i18n.setLanguage('en'));
+
+    // Hash must still be present
+    expect(await page.evaluate(() => window.location.hash)).toBe('#' + cardId);
+    // The re-rendered card with the same id must be open
+    await expect(page.locator('#' + cardId)).toHaveClass(/is-open/);
+  });
+});
+
 test.describe('Projects page – domain filter', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => localStorage.removeItem('ts_lang'));

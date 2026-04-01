@@ -61,5 +61,17 @@ test.describe('Skip-to-main-content link', () => {
 
       await expect(page.locator('main#main-content')).toBeAttached();
     });
+
+    test(`${path} – activating skip link moves focus to main`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+
+      await page.keyboard.press('Tab');
+      await expect(page.locator('.skip-link')).toBeFocused();
+      await page.keyboard.press('Enter');
+
+      const focusedId = await page.evaluate(() => document.activeElement?.id ?? null);
+      expect(focusedId).toBe('main-content');
+    });
   }
 });

@@ -129,6 +129,9 @@
       'notfound.desc':     'The page you are looking for does not exist or has been moved.',
       'notfound.btn':      '← Back to Home',
 
+      /* --- Accessibility --- */
+      'a11y.skipToMain': 'Skip to main content',
+
       /* --- Footer --- */
       'footer.contact':     'Contact',
       'footer.impressum':   'Impressum',
@@ -247,6 +250,9 @@
       'notfound.title':    'Seite nicht gefunden',
       'notfound.desc':     'Die gesuchte Seite existiert nicht oder wurde verschoben.',
       'notfound.btn':      '← Zurück zur Startseite',
+
+      /* --- Accessibility --- */
+      'a11y.skipToMain': 'Zum Inhalt springen',
 
       /* --- Footer --- */
       'footer.contact':     'Kontakt',

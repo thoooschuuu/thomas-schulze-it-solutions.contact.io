@@ -1209,7 +1209,7 @@ html[data-theme="light"] .navbar-brand img {
   transition: top var(--transition);
 }
 
-.skip-link:focus {
+.skip-link:focus-visible {
   top: 0;
   outline: 3px solid var(--accent);
   outline-offset: 2px;

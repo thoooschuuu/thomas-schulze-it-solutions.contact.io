@@ -322,10 +322,23 @@ test.describe('Projects page – grouped technology filter', () => {
 
   test('.NET group shows projects with any .NET variant (multi-member matching)', async ({ page }) => {
     await page.locator('.filter-btn[data-filter-group="dotnet"]').click();
-    const count = await page.locator('.project-card:not(.is-hidden)').evaluateAll(cards =>
-      cards.filter(c => c.getAttribute('data-technologies').includes('.NET')).length
-    );
-    expect(count).toBeGreaterThan(0);
+    const result = await page.locator('.project-card:not(.is-hidden)').evaluateAll(cards => {
+      var groupMembers = ['.NET Framework', '.NET', '.NET 6', '.NET 8', '.NET 10'];
+      var memberSet = {};
+      for (var i = 0; i < groupMembers.length; i++) { memberSet[groupMembers[i]] = true; }
+      var allVisibleMatchGroup = cards.length > 0;
+      var hasVersionSpecificVariant = false;
+      for (var i = 0; i < cards.length; i++) {
+        var techs = (cards[i].getAttribute('data-technologies') || '').split('|');
+        if (!techs.some(function (t) { return memberSet[t]; })) { allVisibleMatchGroup = false; }
+        if (techs.some(function (t) { return t === '.NET 6' || t === '.NET 8' || t === '.NET 10'; })) {
+          hasVersionSpecificVariant = true;
+        }
+      }
+      return { allVisibleMatchGroup: allVisibleMatchGroup, hasVersionSpecificVariant: hasVersionSpecificVariant };
+    });
+    expect(result.allVisibleMatchGroup).toBeTruthy();
+    expect(result.hasVersionSpecificVariant).toBeTruthy();
   });
 
   test('group button gets is-active class; All loses it', async ({ page }) => {
@@ -381,7 +394,7 @@ test.describe('Projects page – grouped technology filter', () => {
   });
 });
 
-test.describe('Projects page – additional technology groups (Option A)', () => {
+test.describe('Projects page – additional technology groups', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => localStorage.removeItem('ts_lang'));
     await page.goto('/projects.html');
@@ -414,7 +427,7 @@ test.describe('Projects page – additional technology groups (Option A)', () =>
   });
 });
 
-test.describe('Projects page – show more / show less overflow (Option B)', () => {
+test.describe('Projects page – filter overflow toggle', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => localStorage.removeItem('ts_lang'));
     await page.goto('/projects.html');

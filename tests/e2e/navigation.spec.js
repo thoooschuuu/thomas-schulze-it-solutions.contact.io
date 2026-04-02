@@ -171,6 +171,36 @@ test.describe('SEO meta tags', () => {
     });
   }
 
+  for (const { path } of pages) {
+    test(`${path} has twitter:card set to summary_large_image`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[name="twitter:card"]').getAttribute('content');
+      expect(content).toBe('summary_large_image');
+    });
+
+    test(`${path} has twitter:title meta tag`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[name="twitter:title"]').getAttribute('content');
+      expect(content).toBeTruthy();
+    });
+
+    test(`${path} has twitter:description meta tag`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[name="twitter:description"]').getAttribute('content');
+      expect(content).toBeTruthy();
+    });
+
+    test(`${path} has twitter:image meta tag`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[name="twitter:image"]').getAttribute('content');
+      expect(content).toContain('social-preview.png');
+    });
+  }
+
   test('index.html has JSON-LD Person structured data', async ({ page }) => {
     await page.goto('/index.html');
     await page.waitForLoadState('domcontentloaded');

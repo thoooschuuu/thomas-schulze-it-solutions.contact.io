@@ -291,40 +291,42 @@ test.describe('Custom 404 page', () => {
 });
 
 test.describe('hreflang tags', () => {
-  const i18nPages = [
-    { path: '/index.html',    url: 'https://thomas-schulze-it-solutions.de/' },
-    { path: '/about.html',    url: 'https://thomas-schulze-it-solutions.de/about.html' },
-    { path: '/projects.html', url: 'https://thomas-schulze-it-solutions.de/projects.html' },
-    { path: '/contact.html',  url: 'https://thomas-schulze-it-solutions.de/contact.html' },
-  ];
+  // Pages with i18n toggles (DE/EN) should expose both `de` and `x-default` hreflang links
+  const i18nPages = pages.filter(p =>
+    p.path === '/index.html' ||
+    p.path === '/about.html' ||
+    p.path === '/projects.html' ||
+    p.path === '/contact.html'
+  );
 
-  for (const { path, url } of i18nPages) {
+  for (const { path, canonical } of i18nPages) {
     test(`${path} has hreflang="de" pointing to canonical URL`, async ({ page }) => {
       await page.goto(path);
       await page.waitForLoadState('domcontentloaded');
       const href = await page.locator('link[rel="alternate"][hreflang="de"]').getAttribute('href');
-      expect(href).toBe(url);
+      expect(href).toBe(canonical);
     });
 
     test(`${path} has hreflang="x-default" pointing to canonical URL`, async ({ page }) => {
       await page.goto(path);
       await page.waitForLoadState('domcontentloaded');
       const href = await page.locator('link[rel="alternate"][hreflang="x-default"]').getAttribute('href');
-      expect(href).toBe(url);
+      expect(href).toBe(canonical);
     });
   }
 
-  const legalPages = [
-    { path: '/impressum.html',   url: 'https://thomas-schulze-it-solutions.de/impressum.html' },
-    { path: '/datenschutz.html', url: 'https://thomas-schulze-it-solutions.de/datenschutz.html' },
-  ];
+  // German-only legal pages should only expose `de` hreflang (no `x-default`)
+  const legalPages = pages.filter(p =>
+    p.path === '/impressum.html' ||
+    p.path === '/datenschutz.html'
+  );
 
-  for (const { path, url } of legalPages) {
+  for (const { path, canonical } of legalPages) {
     test(`${path} has hreflang="de" pointing to canonical URL`, async ({ page }) => {
       await page.goto(path);
       await page.waitForLoadState('domcontentloaded');
       const href = await page.locator('link[rel="alternate"][hreflang="de"]').getAttribute('href');
-      expect(href).toBe(url);
+      expect(href).toBe(canonical);
     });
 
     test(`${path} does NOT have hreflang="x-default"`, async ({ page }) => {

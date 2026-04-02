@@ -14,19 +14,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "if": "Bash(git commit:*)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd tests && npx playwright test --reporter=dot",
-            "timeout": 120,
-            "statusMessage": "Running Playwright tests..."
-          }
-        ]
-      }
-    ]
+    "PostToolUse": []
   }
 }

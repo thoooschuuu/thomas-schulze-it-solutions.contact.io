@@ -113,10 +113,11 @@ The `tests/e2e/datenschutz.spec.js` compliance guardrails enforce: no cookies, o
 
 ## Hooks (`.claude/settings.json`)
 
-Two hooks fire automatically around `git commit`:
+One hook fires automatically before `git commit`:
 
 1. **PreToolUse** — `bash scripts/check-html-sync.sh` runs before the commit. **Blocks** if nav or footer links are out of sync across the 7 HTML pages.
-2. **PostToolUse** — `cd tests && npx playwright test` runs after every commit to catch regressions immediately.
+
+Tests are run manually (see "Run tests" above) or via CI on every PR.
 
 ---
 

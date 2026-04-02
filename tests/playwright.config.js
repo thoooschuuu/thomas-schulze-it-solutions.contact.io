@@ -41,6 +41,6 @@ module.exports = defineConfig({
     port: 3000,
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
-    stderr: 'ignore'
+    stderr: 'ignore',
   },
 });

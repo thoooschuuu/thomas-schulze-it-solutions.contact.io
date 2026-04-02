@@ -15,7 +15,17 @@ Optional: PR number. If not provided, use the current branch's open PR.
 gh pr view --json number,url,headRefName
 ```
 
-### 2. Fetch all inline review comments
+### 2. Resolve owner and repo
+
+Extract `owner` and `repo` for use in subsequent API calls:
+
+```bash
+gh repo view --json owner,name --jq '"owner=\(.owner.login) repo=\(.name)"'
+```
+
+Use these values wherever `{owner}` and `{repo}` appear below.
+
+### 3. Fetch all inline review comments
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments
@@ -23,7 +33,7 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments
 
 Extract for each comment: `id`, `node_id`, `body`, `path`, `line`, `diff_hunk`.
 
-### 3. Evaluate each comment
+### 4. Evaluate each comment
 
 For each comment, decide:
 
@@ -37,7 +47,7 @@ For each comment, decide:
 - It adds complexity without clear benefit in this codebase
 - It's stylistic and the current style is intentional
 
-### 4. Apply valid fixes
+### 5. Apply valid fixes
 
 Make the code changes. Group all fixes into a single commit:
 
@@ -49,7 +59,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 git push
 ```
 
-### 5. Reply to invalid comments
+### 6. Reply to invalid comments
 
 For each comment you are NOT applying, post a reply explaining why:
 
@@ -58,7 +68,7 @@ gh api repos/{owner}/{repo}/pulls/comments/{comment_id}/replies \
   -X POST -f body="<explanation>"
 ```
 
-### 6. Resolve all threads
+### 7. Resolve all threads
 
 First get thread IDs (comment IDs ≠ thread IDs):
 
@@ -92,6 +102,6 @@ gh api graphql -f query='
   }' -f id="{thread_node_id}"
 ```
 
-### 7. Confirm
+### 8. Confirm
 
 Report back: how many comments were applied, how many responded to, and confirm all threads are resolved.

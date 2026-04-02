@@ -40,3 +40,7 @@ git checkout -b feature/[name]
 ### 6. Confirm
 
 Tell the user the branch is ready and development can begin.
+
+If the branch is linked to a GitHub issue, suggest the next step:
+
+> Branch is ready. Run `/implement-issue <number>` to plan and implement the issue.

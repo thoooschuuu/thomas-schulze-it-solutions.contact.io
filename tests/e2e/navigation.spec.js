@@ -171,6 +171,39 @@ test.describe('SEO meta tags', () => {
     });
   }
 
+  for (const { path } of pages) {
+    test(`${path} has twitter:card set to summary_large_image`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const content = await page.locator('meta[name="twitter:card"]').getAttribute('content');
+      expect(content).toBe('summary_large_image');
+    });
+
+    test(`${path} has twitter:title matching og:title`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const twitterTitle = await page.locator('meta[name="twitter:title"]').getAttribute('content');
+      const ogTitle = await page.locator('meta[property="og:title"]').getAttribute('content');
+      expect(twitterTitle).toBe(ogTitle);
+    });
+
+    test(`${path} has twitter:description matching og:description`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const twitterDesc = await page.locator('meta[name="twitter:description"]').getAttribute('content');
+      const ogDesc = await page.locator('meta[property="og:description"]').getAttribute('content');
+      expect(twitterDesc).toBe(ogDesc);
+    });
+
+    test(`${path} has twitter:image matching og:image`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState('domcontentloaded');
+      const twitterImage = await page.locator('meta[name="twitter:image"]').getAttribute('content');
+      const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
+      expect(twitterImage).toBe(ogImage);
+    });
+  }
+
   test('index.html has JSON-LD Person structured data', async ({ page }) => {
     await page.goto('/index.html');
     await page.waitForLoadState('domcontentloaded');

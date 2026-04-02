@@ -91,7 +91,7 @@ UI icons are inline `<svg>` with `currentColor`. Never introduce an icon font. D
 
 ## Manual sync required (no templating)
 
-`<nav>` and `<footer>` blocks are duplicated across all six HTML files. When adding a nav link, page, or footer entry, update **all six files** manually. `sitemap.xml` must also be updated when pages are added/removed.
+`<nav>` and `<footer>` blocks are duplicated across all seven HTML files (`index.html`, `about.html`, `projects.html`, `contact.html`, `impressum.html`, `datenschutz.html`, `404.html`). When adding a nav link, page, or footer entry, update **all seven files** manually. `sitemap.xml` must also be updated when pages are added/removed.
 
 ---
 
@@ -115,7 +115,7 @@ The `tests/e2e/datenschutz.spec.js` compliance guardrails enforce: no cookies, o
 
 Two hooks fire automatically around `git commit`:
 
-1. **PreToolUse** — `bash scripts/check-html-sync.sh` runs before the commit. **Blocks** if nav or footer links are out of sync across the 6 HTML pages.
+1. **PreToolUse** — `bash scripts/check-html-sync.sh` runs before the commit. **Blocks** if nav or footer links are out of sync across the 7 HTML pages.
 2. **PostToolUse** — `cd tests && npx playwright test` runs after every commit to catch regressions immediately.
 
 ---
@@ -137,4 +137,4 @@ When a change touches multiple independent files (new page, new nav link, SEO up
 - **Agent 2:** Update `sitemap.xml` and SEO tags
 - **Agent 3:** Write/update the corresponding Playwright tests
 
-This mitigates the biggest risk in this repo: forgetting to update one of the 6 manually-synced HTML files. The pre-commit HTML sync hook provides a safety net.
+This mitigates the biggest risk in this repo: forgetting to update one of the 7 manually-synced HTML files. The pre-commit HTML sync hook provides a safety net.

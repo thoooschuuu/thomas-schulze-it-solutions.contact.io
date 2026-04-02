@@ -30,7 +30,17 @@ Ask the user for each field one group at a time. Use this sequence:
 
 ### 1. Generate a UUID v4
 
-Use a random UUID for the project `id`. Both language entries must share the same `id`.
+Run one of these to get a random UUID:
+
+```bash
+# macOS / Linux
+uuidgen | tr '[:upper:]' '[:lower:]'
+
+# Or via Node.js
+node -e "console.log(crypto.randomUUID())"
+```
+
+Both language entries must share the same `id`.
 
 ### 2. Check domainIcons
 
